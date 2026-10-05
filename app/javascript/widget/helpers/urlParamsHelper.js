@@ -11,6 +11,10 @@ export const getLocale = (search = '') => {
   return new URLSearchParams(search).get('locale');
 };
 
+export const getRequestedConversationId = (search = '') => {
+  return new URLSearchParams(search).get('conversation_id');
+};
+
 export const buildPopoutURL = ({
   origin,
   conversationCookie,
