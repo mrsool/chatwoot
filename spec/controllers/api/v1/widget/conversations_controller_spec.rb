@@ -59,6 +59,42 @@ RSpec.describe '/api/v1/widget/conversations/toggle_typing', type: :request do
         expect(response).to have_http_status(:not_found)
       end
     end
+
+    context 'with a conversation_id param' do
+      let!(:latest_conversation) do
+        create(:conversation, contact: contact, account: account, inbox: web_widget.inbox, contact_inbox: contact_inbox)
+      end
+
+      it 'returns the latest conversation when conversation_id is absent' do
+        get '/api/v1/widget/conversations',
+            headers: { 'X-Auth-Token' => token },
+            params: { website_token: web_widget.website_token },
+            as: :json
+
+        expect(response.parsed_body['id']).to eq(latest_conversation.display_id)
+      end
+
+      it 'returns the requested conversation of the contact' do
+        get '/api/v1/widget/conversations',
+            headers: { 'X-Auth-Token' => token },
+            params: { website_token: web_widget.website_token, conversation_id: conversation.display_id },
+            as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['id']).to eq(conversation.display_id)
+      end
+
+      it 'returns not found for a conversation of another contact' do
+        other_conversation = create(:conversation, account: account, inbox: web_widget.inbox)
+
+        get '/api/v1/widget/conversations',
+            headers: { 'X-Auth-Token' => token },
+            params: { website_token: web_widget.website_token, conversation_id: other_conversation.display_id },
+            as: :json
+
+        expect(response).to have_http_status(:not_found)
+      end
+    end
   end
 
   describe 'POST /api/v1/widget/conversations' do

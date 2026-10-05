@@ -39,9 +39,37 @@ RSpec.describe '/api/v1/widget/messages', type: :request do
         expect(json_response['payload'].length).to eq(0)
       end
     end
+
+    context 'when conversation_id param is passed' do
+      it 'returns messages of the requested conversation' do
+        create(:conversation, contact: contact, account: account, inbox: web_widget.inbox, contact_inbox: contact_inbox)
+
+        get api_v1_widget_messages_url,
+            params: { website_token: web_widget.website_token, conversation_id: conversation.display_id },
+            headers: { 'X-Auth-Token' => token },
+            as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['payload'].pluck('conversation_id').uniq).to eq([conversation.display_id])
+      end
+    end
   end
 
   describe 'POST /api/v1/widget/messages' do
+    context 'when conversation_id param is passed' do
+      it 'creates the message in the requested conversation' do
+        create(:conversation, contact: contact, account: account, inbox: web_widget.inbox, contact_inbox: contact_inbox)
+
+        post api_v1_widget_messages_url,
+             params: { website_token: web_widget.website_token, conversation_id: conversation.display_id, message: { content: 'reply' } },
+             headers: { 'X-Auth-Token' => token },
+             as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(conversation.messages.last.content).to eq('reply')
+      end
+    end
+
     context 'when the conversation is resolved and the inbox does not allow messages after resolved' do
       before do
         web_widget.inbox.update!(allow_messages_after_resolved: false)
