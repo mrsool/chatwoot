@@ -1,6 +1,7 @@
 import {
   buildSearchParamsWithLocale,
   getLocale,
+  getRequestedConversationId,
   buildPopoutURL,
 } from '../urlParamsHelper';
 
@@ -32,6 +33,22 @@ describe('#getLocale', () => {
       'fr'
     );
     expect(getLocale('')).toEqual(null);
+  });
+});
+
+describe('#getRequestedConversationId', () => {
+  it('returns the requested conversation id', () => {
+    expect(getRequestedConversationId('?conversation_id=15')).toEqual('15');
+    expect(
+      getRequestedConversationId('?website_token=3&conversation_id=16&locale=en')
+    ).toEqual('16');
+  });
+
+  it('returns null when none is requested', () => {
+    expect(getRequestedConversationId('?website_token=3&locale=en')).toEqual(
+      null
+    );
+    expect(getRequestedConversationId('')).toEqual(null);
   });
 });
 
