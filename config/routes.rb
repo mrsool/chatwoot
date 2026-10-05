@@ -540,6 +540,7 @@ Rails.application.routes.draw do
             get  :toggle_status
           end
         end
+        resources :order_conversations, only: [:create]
         resource :contact, only: [:show, :update] do
           collection do
             post :destroy_custom_attributes
