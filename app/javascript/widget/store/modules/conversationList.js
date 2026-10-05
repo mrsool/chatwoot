@@ -1,5 +1,6 @@
 import { getConversationsAPI } from '../../api/conversation';
 import { MESSAGE_TYPE } from '../../helpers/constants';
+import { getRequestedConversationId } from '../../helpers/urlParamsHelper';
 
 const state = {
   records: [],
@@ -59,7 +60,16 @@ export const actions = {
     const { thread } = listState;
     await dispatch('fetch');
     if (listState.thread !== thread) return;
+    // An explicitly requested conversation wins over unread and recency: the
+    // host opens the widget on a specific thread and that intent is not a
+    // preference. It also makes a resolved thread reachable, which the rules
+    // below deliberately skip.
+    const requestedId = getRequestedConversationId(window.location.search);
     const conversation =
+      (requestedId &&
+        listState.records.find(
+          record => String(record.id) === String(requestedId)
+        )) ||
       listState.records.find(record => record.unread_count > 0) ||
       listState.records.find(record => record.status !== 'resolved') ||
       listState.records[0];
