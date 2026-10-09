@@ -7,6 +7,7 @@ import TabBar from '../TabBar.vue';
 import configMixin from '../../mixins/configMixin';
 import { mapGetters } from 'vuex';
 import { IFrameHelper } from 'widget/helpers/utils';
+import { isNavigationHidden } from 'widget/helpers/urlParamsHelper';
 
 export default {
   components: {
@@ -45,7 +46,13 @@ export default {
         this.channelConfig.welcomeTitle || this.channelConfig.welcomeTagline
       );
     },
+    navigationHidden() {
+      return isNavigationHidden(window.location.search);
+    },
     showBackButton() {
+      if (this.navigationHidden) {
+        return false;
+      }
       return ['article-viewer', 'messages', 'prechat-form'].includes(
         this.$route.name
       );
@@ -175,7 +182,9 @@ export default {
           :disable-branding="disableBranding"
         />
       </div>
-      <TabBar v-if="hasMultipleConversationsEnabled && isOnTabScreen" />
+      <TabBar
+        v-if="hasMultipleConversationsEnabled && isOnTabScreen && !navigationHidden"
+      />
     </div>
   </div>
 </template>

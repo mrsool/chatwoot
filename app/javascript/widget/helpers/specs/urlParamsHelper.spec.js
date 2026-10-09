@@ -2,6 +2,7 @@ import {
   buildSearchParamsWithLocale,
   getLocale,
   getRequestedConversationId,
+  isNavigationHidden,
   buildPopoutURL,
 } from '../urlParamsHelper';
 
@@ -49,6 +50,28 @@ describe('#getRequestedConversationId', () => {
       null
     );
     expect(getRequestedConversationId('')).toEqual(null);
+  });
+});
+
+describe('#isNavigationHidden', () => {
+  it('is hidden only when the host asks for it', () => {
+    expect(isNavigationHidden('?hide_nav=1')).toBe(true);
+    expect(isNavigationHidden('?website_token=3&hide_nav=1&locale=en')).toBe(
+      true
+    );
+  });
+
+  it('is not hidden by default', () => {
+    expect(isNavigationHidden('?website_token=3&locale=en')).toBe(false);
+    expect(isNavigationHidden('')).toBe(false);
+  });
+
+  // Anything but an explicit 1 leaves the widget's own navigation in place,
+  // so a stray or truncated value cannot strand the user on one thread.
+  it('ignores values other than 1', () => {
+    expect(isNavigationHidden('?hide_nav=0')).toBe(false);
+    expect(isNavigationHidden('?hide_nav=true')).toBe(false);
+    expect(isNavigationHidden('?hide_nav=')).toBe(false);
   });
 });
 
