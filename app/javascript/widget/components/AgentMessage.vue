@@ -59,6 +59,13 @@ export default {
       const { created_at: createdAt = '' } = this.message;
       return messageStamp(createdAt, 'LLL d yyyy, h:mm a');
     },
+    // Short form, because it sits under every bubble where the day is already
+    // obvious. Empty for a message still being sent: it has no created_at yet,
+    // and formatting that throws rather than rendering nothing.
+    messageTime() {
+      const { created_at: createdAt = '' } = this.message;
+      return createdAt ? messageStamp(createdAt) : '';
+    },
     messageType() {
       const { message_type: type = 1 } = this.message;
       return type;
@@ -246,12 +253,17 @@ export default {
             />
           </div>
         </div>
-        <p
-          v-if="message.showAvatar || hasRecordedResponse"
-          class="agent-name text-n-slate-11"
-        >
-          {{ agentName }}
-        </p>
+        <div class="flex items-center gap-2">
+          <p
+            v-if="message.showAvatar || hasRecordedResponse"
+            class="agent-name text-n-slate-11"
+          >
+            {{ agentName }}
+          </p>
+          <span v-if="messageTime" class="text-xs text-n-slate-11">
+            {{ messageTime }}
+          </span>
+        </div>
       </div>
     </div>
 
