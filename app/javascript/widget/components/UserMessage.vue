@@ -55,9 +55,11 @@ export default {
       const { message } = this;
       return !!message.content;
     },
+    // Empty while the message is still in flight: an optimistic bubble has no
+    // created_at, and formatting that throws rather than rendering nothing.
     readableTime() {
       const { created_at: createdAt = '' } = this.message;
-      return messageStamp(createdAt);
+      return createdAt ? messageStamp(createdAt) : '';
     },
     isFailed() {
       const { status = '' } = this.message;
@@ -162,6 +164,9 @@ export default {
             </div>
           </DragWrapper>
         </div>
+        <p v-if="readableTime" class="flex justify-end text-xs text-n-slate-11">
+          {{ readableTime }}
+        </p>
         <div
           v-if="isFailed"
           class="flex justify-end px-4 py-2 text-n-ruby-9 align-middle"
