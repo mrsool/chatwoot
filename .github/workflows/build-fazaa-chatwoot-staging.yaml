@@ -7,9 +7,6 @@ permissions:
 on:
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 concurrency:
   group: build-fazaa-chatwoot-staging
   cancel-in-progress: false
