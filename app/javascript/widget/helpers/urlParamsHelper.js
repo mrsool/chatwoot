@@ -11,6 +11,16 @@ export const getLocale = (search = '') => {
   return new URLSearchParams(search).get('locale');
 };
 
+export const getRequestedConversationId = (search = '') => {
+  return new URLSearchParams(search).get('conversation_id');
+};
+
+// A host that embeds the widget full-screen owns navigation itself, so the
+// widget must not offer its own way out of the thread it was opened on.
+export const isNavigationHidden = (search = '') => {
+  return new URLSearchParams(search).get('hide_nav') === '1';
+};
+
 export const buildPopoutURL = ({
   origin,
   conversationCookie,
