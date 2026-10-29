@@ -150,6 +150,11 @@ COPY --from=pre-builder /app /app
 # Copy .git_sha file from pre-builder stage
 COPY --from=pre-builder /app/.git_sha /app/.git_sha
 
+# Precompress JS/CSS assets for Rails static file serving
+RUN find /app/public/vite/assets -type f \
+    \( -name '*.js' -o -name '*.css' \) \
+    -exec sh -c 'gzip -9 -c "$1" > "$1.gz"' _ {} \;
+
 WORKDIR /app
 
 EXPOSE 3000
