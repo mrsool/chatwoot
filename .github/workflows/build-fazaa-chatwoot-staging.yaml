@@ -15,7 +15,7 @@ env:
   AWS_REGION: eu-west-1
   ECR_REPOSITORY: fazaa-chatwoot
   TARGET_SHA: 2fd3acb372d26f13e0dd5cbf8db2e4bde92745b4
-  IMAGE_TAG: 2fd3acb
+  IMAGE_TAG: 2fd3acb-gzip-${{ github.sha }}
 
 jobs:
   build:
@@ -34,11 +34,31 @@ jobs:
     runs-on: ${{ matrix.runner }}
 
     steps:
+      - name: Checkout Gzip Dockerfile from workflow revision
+        uses: actions/checkout@v4
+
+      - name: Save Gzip Dockerfile
+        run: cp docker/Dockerfile "$RUNNER_TEMP/fazaa-gzip-Dockerfile"
+
       - name: Checkout exact tested Chatwoot revision
         uses: actions/checkout@v4
         with:
           ref: ${{ env.TARGET_SHA }}
           fetch-depth: 1
+
+      - name: Apply Gzip-only change to tested Chatwoot source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp "$RUNNER_TEMP/fazaa-gzip-Dockerfile" docker/Dockerfile
+          CHANGE="$(git diff --numstat -- docker/Dockerfile | awk '{print $1 ":" $2}')"
+          if [ "$CHANGE" != "5:0" ]; then
+            echo "::error::Unexpected Dockerfile changes"
+            git diff -- docker/Dockerfile
+            exit 1
+          fi
+          grep -qF '# Precompress JS/CSS assets' docker/Dockerfile
+          git diff -- docker/Dockerfile
 
       - name: Verify source revision and Enterprise code
         shell: bash
