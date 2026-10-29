@@ -5,6 +5,9 @@ permissions:
   contents: read
 
 on:
+  push:
+    branches:
+      - develop
   workflow_dispatch:
 
 concurrency:
@@ -14,8 +17,7 @@ concurrency:
 env:
   AWS_REGION: eu-west-1
   ECR_REPOSITORY: fazaa-chatwoot
-  TARGET_SHA: 2fd3acb372d26f13e0dd5cbf8db2e4bde92745b4
-  IMAGE_TAG: 2fd3acb
+  IMAGE_TAG: ${{ github.sha }}
 
 jobs:
   build:
@@ -37,7 +39,7 @@ jobs:
       - name: Checkout exact tested Chatwoot revision
         uses: actions/checkout@v4
         with:
-          ref: ${{ env.TARGET_SHA }}
+          ref: ${{ github.sha }}
           fetch-depth: 1
 
       - name: Verify source revision and Enterprise code
@@ -47,8 +49,8 @@ jobs:
 
           ACTUAL_SHA="$(git rev-parse HEAD)"
 
-          if [ "$ACTUAL_SHA" != "$TARGET_SHA" ]; then
-            echo "Expected $TARGET_SHA but checked out $ACTUAL_SHA"
+          if [ "$ACTUAL_SHA" != "$GITHUB_SHA" ]; then
+            echo "Expected $GITHUB_SHA but checked out $ACTUAL_SHA"
             exit 1
           fi
 
@@ -144,8 +146,34 @@ jobs:
           {
             echo "### Fazaa Chatwoot staging image"
             echo
-            echo "- Source SHA: \`${TARGET_SHA}\`"
+            echo "- Source SHA: \`${GITHUB_SHA}\`"
             echo "- Edition: \`ee\`"
             echo "- Image: \`${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}\`"
             echo "- Digest: \`${DIGEST}\`"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-preflight:
+    name: Verify staging deployment access
+    needs: manifest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify GitOps credential
+        env:
+          GITOPS_TOKEN: ${{ secrets.DEVOPS_ACCOUNT_REPO_ACCESS_TOKEN }}
+        run: |
+          if [ -z "$GITOPS_TOKEN" ]; then
+            echo "::error::GitOps deployment token unavailable to Chatwoot"
+            exit 1
+          fi
+
+  deploy:
+    name: Deploy Fazaa staging
+    needs: deploy-preflight
+    uses: mrsool/workflows/.github/workflows/deploy.yaml@main
+    with:
+      project_name: fazaa-chatwoot
+      environment: staging
+      values_files: fazaa-chatwoot/ci/staging-values.yaml
+      image_tag: ${{ github.sha }}
+    secrets: inherit
