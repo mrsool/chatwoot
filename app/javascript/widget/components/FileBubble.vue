@@ -42,12 +42,6 @@ export default {
         : '';
     },
   },
-  methods: {
-    openLink() {
-      const win = window.open(this.url, '_blank');
-      win.focus();
-    },
-  },
 };
 </script>
 
@@ -65,10 +59,12 @@ export default {
         {{ title }}
       </div>
       <div class="leading-none mb-1">
+        <!-- Without `download` this navigates the webview to the file and leaves
+        the customer with no way back to the conversation. -->
         <a
           class="download"
           rel="noreferrer noopener nofollow"
-          target="_blank"
+          :download="fileName"
           :style="{ color: textColor }"
           :href="url"
         >

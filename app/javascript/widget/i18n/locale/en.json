@@ -7,6 +7,12 @@
     "FORM_BUBBLE": {
       "SUBMIT": "Submit"
     },
+    "MEDIA_PREVIEW": {
+      "CLOSE": "Close",
+      "DOWNLOAD": "Download",
+      "EXPAND": "Expand",
+      "IMAGE_ALT": "Picture message"
+    },
     "MESSAGE_BUBBLE": {
       "RETRY": "Send message again",
       "ERROR_MESSAGE": "Couldn't send, try again"

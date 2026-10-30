@@ -1,31 +1,38 @@
-<script>
-export default {
-  props: {
-    url: { type: String, default: '' },
-    thumb: { type: String, default: '' },
-    readableTime: { type: String, default: '' },
-  },
-  emits: ['error'],
-  methods: {
-    onImgError() {
-      this.$emit('error');
-    },
-  },
-};
+<script setup>
+import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import MediaPreview from 'widget/components/MediaPreview.vue';
+
+defineProps({
+  url: { type: String, default: '' },
+  thumb: { type: String, default: '' },
+  readableTime: { type: String, default: '' },
+});
+
+const emit = defineEmits(['error']);
+
+const { t } = useI18n();
+
+const isPreviewOpen = ref(false);
 </script>
 
 <template>
-  <a
-    :href="url"
-    target="_blank"
-    rel="noreferrer noopener nofollow"
-    class="image"
-  >
+  <button type="button" class="image w-fit" @click="isPreviewOpen = true">
     <div class="wrap">
-      <img :src="thumb" alt="Picture message" @error="onImgError" />
+      <img
+        :src="thumb"
+        :alt="t('COMPONENTS.MEDIA_PREVIEW.IMAGE_ALT')"
+        @error="emit('error')"
+      />
       <span class="time">{{ readableTime }}</span>
     </div>
-  </a>
+  </button>
+  <MediaPreview
+    v-if="isPreviewOpen"
+    :url="url"
+    file-type="image"
+    @close="isPreviewOpen = false"
+  />
 </template>
 
 <style lang="scss" scoped>
