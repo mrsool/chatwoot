@@ -7,6 +7,12 @@
     "FORM_BUBBLE": {
       "SUBMIT": "إرسال"
     },
+    "MEDIA_PREVIEW": {
+      "CLOSE": "إغلاق",
+      "DOWNLOAD": "تحميل",
+      "EXPAND": "تكبير",
+      "IMAGE_ALT": "رسالة صورة"
+    },
     "MESSAGE_BUBBLE": {
       "RETRY": "إرسال الرسالة مرة أخرى",
       "ERROR_MESSAGE": "تعذر الإرسال! حاول مرة أخرى"
