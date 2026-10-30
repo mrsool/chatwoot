@@ -41,7 +41,9 @@ describe('#getRequestedConversationId', () => {
   it('returns the requested conversation id', () => {
     expect(getRequestedConversationId('?conversation_id=15')).toEqual('15');
     expect(
-      getRequestedConversationId('?website_token=3&conversation_id=16&locale=en')
+      getRequestedConversationId(
+        '?website_token=3&conversation_id=16&locale=en'
+      )
     ).toEqual('16');
   });
 
