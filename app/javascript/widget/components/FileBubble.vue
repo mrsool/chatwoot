@@ -1,6 +1,7 @@
 <script>
 import FluentIcon from 'shared/components/FluentIcon/Index.vue';
 import { getContrastingTextColor } from '@chatwoot/utils';
+import { isMediaPreviewEnabled } from 'widget/helpers/urlParamsHelper';
 
 export default {
   components: {
@@ -25,6 +26,9 @@ export default {
     },
   },
   computed: {
+    previewEnabled() {
+      return isMediaPreviewEnabled(window.location.search);
+    },
     title() {
       return this.isInProgress
         ? this.$t('COMPONENTS.FILE_BUBBLE.UPLOADING')
@@ -60,11 +64,13 @@ export default {
       </div>
       <div class="leading-none mb-1">
         <!-- Without `download` this navigates the webview to the file and leaves
-        the customer with no way back to the conversation. -->
+        the customer with no way back to the conversation. A browser host keeps
+        the new tab it has always opened. -->
         <a
           class="download"
           rel="noreferrer noopener nofollow"
-          :download="fileName"
+          :download="previewEnabled ? fileName : null"
+          :target="previewEnabled ? null : '_blank'"
           :style="{ color: textColor }"
           :href="url"
         >

@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import MediaPreview from 'widget/components/MediaPreview.vue';
+import { isMediaPreviewEnabled } from 'widget/helpers/urlParamsHelper';
 
 defineProps({
   url: { type: String, default: '' },
@@ -13,6 +14,7 @@ const emit = defineEmits(['error']);
 const { t } = useI18n();
 
 const isPreviewOpen = ref(false);
+const previewEnabled = isMediaPreviewEnabled(window.location.search);
 
 const onVideoError = () => {
   emit('error');
@@ -30,10 +32,11 @@ const onVideoError = () => {
     <!-- The video owns taps on itself for play/pause, so expanding needs a
     control of its own rather than a tap on the frame. -->
     <button
+      v-if="previewEnabled"
       type="button"
       :aria-label="t('COMPONENTS.MEDIA_PREVIEW.EXPAND')"
       :title="t('COMPONENTS.MEDIA_PREVIEW.EXPAND')"
-      class="absolute flex items-center justify-center text-white rounded-full top-2 end-2 size-8 bg-black/50"
+      class="absolute flex items-center justify-center text-white rounded-full top-2 end-2 size-8 bg-n-black/50"
       @click="isPreviewOpen = true"
     >
       <span class="i-lucide-expand size-4" aria-hidden="true" />

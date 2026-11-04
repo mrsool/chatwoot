@@ -3,6 +3,7 @@ import {
   getLocale,
   getRequestedConversationId,
   isNavigationHidden,
+  isMediaPreviewEnabled,
   buildPopoutURL,
 } from '../urlParamsHelper';
 
@@ -74,6 +75,28 @@ describe('#isNavigationHidden', () => {
     expect(isNavigationHidden('?hide_nav=0')).toBe(false);
     expect(isNavigationHidden('?hide_nav=true')).toBe(false);
     expect(isNavigationHidden('?hide_nav=')).toBe(false);
+  });
+});
+
+describe('#isMediaPreviewEnabled', () => {
+  it('is enabled only when the host asks for it', () => {
+    expect(isMediaPreviewEnabled('?media_preview=1')).toBe(true);
+    expect(
+      isMediaPreviewEnabled('?website_token=3&media_preview=1&locale=en')
+    ).toBe(true);
+  });
+
+  // The default is the behaviour every embed had before the preview existed,
+  // so a host that says nothing keeps opening attachments in a new tab.
+  it('is disabled by default', () => {
+    expect(isMediaPreviewEnabled('?website_token=3&locale=en')).toBe(false);
+    expect(isMediaPreviewEnabled('')).toBe(false);
+  });
+
+  it('ignores values other than 1', () => {
+    expect(isMediaPreviewEnabled('?media_preview=0')).toBe(false);
+    expect(isMediaPreviewEnabled('?media_preview=true')).toBe(false);
+    expect(isMediaPreviewEnabled('?media_preview=')).toBe(false);
   });
 });
 

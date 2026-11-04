@@ -28,9 +28,12 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
     <div
       role="dialog"
       aria-modal="true"
-      class="fixed inset-0 z-50 flex flex-col bg-black/90"
+      class="fixed inset-0 z-50 flex flex-col bg-n-black/90"
       @click="emit('close')"
     >
+      <!-- The palette binds `black` to a scale, so a bare `bg-black` compiles
+      to nothing and leaves white controls on whatever shows through. Pure
+      black lives under `n-black`. -->
       <div class="flex items-center justify-end gap-2 p-3" @click.stop>
         <!-- data_url is a same-origin ActiveStorage route, so the browser
         honours `download`, and a WebView gets a real url its download
@@ -40,7 +43,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
           :download="fileName"
           :aria-label="t('COMPONENTS.MEDIA_PREVIEW.DOWNLOAD')"
           :title="t('COMPONENTS.MEDIA_PREVIEW.DOWNLOAD')"
-          class="flex items-center justify-center text-white rounded-full size-10 bg-white/10"
+          class="flex items-center justify-center text-white rounded-full size-10 bg-white/20"
         >
           <span class="i-lucide-download size-5" aria-hidden="true" />
         </a>
@@ -48,7 +51,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
           type="button"
           :aria-label="t('COMPONENTS.MEDIA_PREVIEW.CLOSE')"
           :title="t('COMPONENTS.MEDIA_PREVIEW.CLOSE')"
-          class="flex items-center justify-center text-white rounded-full size-10 bg-white/10"
+          class="flex items-center justify-center text-white rounded-full size-10 bg-white/20"
           @click="emit('close')"
         >
           <span class="i-lucide-x size-5" aria-hidden="true" />

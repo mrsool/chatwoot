@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import MediaPreview from 'widget/components/MediaPreview.vue';
+import { isMediaPreviewEnabled } from 'widget/helpers/urlParamsHelper';
 
 defineProps({
   url: { type: String, default: '' },
@@ -14,10 +15,27 @@ const emit = defineEmits(['error']);
 const { t } = useI18n();
 
 const isPreviewOpen = ref(false);
+const previewEnabled = isMediaPreviewEnabled(window.location.search);
+
+// Stays an anchor either way: without the param the browser follows it to a
+// new tab, exactly as before the preview existed.
+const onClick = event => {
+  if (!previewEnabled) return;
+
+  event.preventDefault();
+  isPreviewOpen.value = true;
+};
 </script>
 
 <template>
-  <button type="button" class="image w-fit" @click="isPreviewOpen = true">
+  <a
+    :href="url"
+    :target="previewEnabled ? null : '_blank'"
+    rel="noreferrer noopener nofollow"
+    class="image"
+    :class="{ 'w-fit': previewEnabled }"
+    @click="onClick"
+  >
     <div class="wrap">
       <img
         :src="thumb"
@@ -26,7 +44,7 @@ const isPreviewOpen = ref(false);
       />
       <span class="time">{{ readableTime }}</span>
     </div>
-  </button>
+  </a>
   <MediaPreview
     v-if="isPreviewOpen"
     :url="url"
