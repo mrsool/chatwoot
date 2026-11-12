@@ -44,6 +44,7 @@ import portals from './modules/helpCenterPortals';
 import reports from './modules/reports';
 import sla from './modules/sla';
 import awayReasons from './modules/awayReasons';
+import liveSla from './modules/liveSla';
 import slaReports from './modules/SLAReports';
 import sidebarSortPreferences from './modules/sidebarSortPreferences';
 import summaryReports from './modules/summaryReports';
@@ -112,6 +113,7 @@ export default createStore({
     reports,
     sla,
     awayReasons,
+    liveSla,
     slaReports,
     sidebarSortPreferences,
     summaryReports,

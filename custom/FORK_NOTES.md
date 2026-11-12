@@ -27,3 +27,7 @@ Every upstream file touched by the Fazaa fork, one line each: path, change, and 
 - `app/javascript/dashboard/routes/dashboard/settings/account/Index.vue`: renders the flag-gated `IdleAway` settings section; the account settings page is a hard-coded list of sections.
 - `app/javascript/dashboard/i18n/locale/en/index.js`, `app/javascript/dashboard/i18n/locale/ar/index.js`: import the `idleAway.json` namespace; locale indexes are the only loaders.
 - `config/routes.rb`: adds `get 'reports/live_sla', to: 'live_sla#index'` in the v1 accounts scope for the live SLA board; routes are a single file with no extension hook.
+- `app/javascript/dashboard/routes/dashboard/settings/reports/reports.routes.js`: adds the `live_sla_reports` route (flag `fazaa_sla_live`, same permissions as SLA reports); routes are listed explicitly.
+- `app/javascript/dashboard/components-next/sidebar/Sidebar.vue`: adds the "Live SLA" reports entry shown only when both `sla` and `fazaa_sla_live` are on; the reports menu is a hard-coded list.
+- `app/javascript/dashboard/store/index.js`, `app/javascript/dashboard/store/mutation-types.js`: register the `liveSla` module and its mutation types; store modules and mutation types are single files.
+- `app/javascript/dashboard/i18n/locale/en/index.js`, `app/javascript/dashboard/i18n/locale/ar/index.js`: import the `liveSla.json` namespace; locale indexes are the only loaders.

@@ -96,6 +96,12 @@ const hasFazaaWfm = computed(() => {
   );
 });
 
+const hasLiveSla = computed(() =>
+  [FEATURE_FLAGS.SLA, FEATURE_FLAGS.FAZAA_SLA_LIVE].every(flag =>
+    isFeatureEnabledonAccount.value(accountId.value, flag)
+  )
+);
+
 const hasConversationUnreadCounts = computed(() => {
   return isFeatureEnabledonAccount.value(
     accountId.value,
@@ -722,6 +728,15 @@ const menuItems = computed(() => {
           label: t('SIDEBAR.REPORTS_SLA'),
           to: accountScopedRoute('sla_reports'),
         },
+        ...(hasLiveSla.value
+          ? [
+              {
+                name: 'Reports Live SLA',
+                label: t('LIVE_SLA.TITLE'),
+                to: accountScopedRoute('live_sla_reports'),
+              },
+            ]
+          : []),
         {
           name: 'Reports Bot',
           label: t('SIDEBAR.REPORTS_BOT'),

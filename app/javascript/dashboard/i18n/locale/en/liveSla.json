@@ -1,0 +1,32 @@
+{
+  "LIVE_SLA": {
+    "TITLE": "Live SLA",
+    "BREACHED": "Breached",
+    "AT_RISK": "At risk",
+    "ON_TRACK": "On track",
+    "HIT_RATE": "Hit rate",
+    "WINDOW_HOURS": "last {hours}h",
+    "STALE_SINCE": "Stale since",
+    "EMPTY": "No open conversations with an active SLA",
+    "FILTERS": {
+      "INBOX": "All inboxes",
+      "TEAM": "All teams",
+      "ASSIGNEE": "All agents",
+      "LABEL": "All labels",
+      "POLICY": "All SLA policies",
+      "CR_CODE": "CR code",
+      "COUNTRY": "Country"
+    },
+    "TABLE": {
+      "CONVERSATION": "Conversation",
+      "INBOX": "Inbox",
+      "ASSIGNEE": "Assignee",
+      "POLICY": "SLA policy"
+    },
+    "TIMERS": {
+      "FRT": "First response",
+      "NRT": "Next response",
+      "RT": "Resolution"
+    }
+  }
+}
