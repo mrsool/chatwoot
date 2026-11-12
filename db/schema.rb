@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_09_24_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_12_100000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -318,6 +318,16 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_24_120000) do
     t.boolean "active", default: true, null: false
     t.integer "execution_delay"
     t.index ["account_id"], name: "index_automation_rules_on_account_id"
+  end
+
+  create_table "away_reasons", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "name", null: false
+    t.boolean "active", default: true, null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index "account_id, lower((name)::text)", name: "index_away_reasons_on_account_id_and_lower_name", unique: true
   end
 
   create_table "calls", force: :cascade do |t|

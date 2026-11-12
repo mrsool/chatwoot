@@ -56,6 +56,8 @@ export const FEATURE_FLAGS = {
   CONVERSATION_REQUIRED_ATTRIBUTES: 'conversation_required_attributes',
   CONVERSATION_UNREAD_COUNTS: 'conversation_unread_counts',
   UNREAD_COUNT_FOR_FILTERS: 'unread_count_for_filters',
+  FAZAA_WFM: 'fazaa_wfm',
+  FAZAA_SLA_LIVE: 'fazaa_sla_live',
 };
 
 export const PREMIUM_FEATURES = [
