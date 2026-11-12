@@ -98,13 +98,6 @@ module Chatwoot
     ENV['REDIS_OPENSSL_VERIFY_MODE'] == 'none' ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER
   end
 
-  def self.redis_ssl_params
-    params = { verify_mode: redis_ssl_verify_mode }
-    ca_file = ENV['REDIS_CA_FILE']
-    params[:ca_file] = ca_file if ca_file && !ca_file.empty?
-    params
-  end
-
   def self.encryption_configured?
     # TODO: Once Active Record encryption keys are mandatory (target 3-4 releases out),
     # remove this guard and assume encryption is always enabled.
