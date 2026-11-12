@@ -26,3 +26,4 @@ Every upstream file touched by the Fazaa fork, one line each: path, change, and 
 - `app/javascript/dashboard/routes/dashboard/Dashboard.vue`: mounts the flag-gated `IdleAwayWatcher` once in the authenticated root layout; the layout has no slot or hook for extra global components.
 - `app/javascript/dashboard/routes/dashboard/settings/account/Index.vue`: renders the flag-gated `IdleAway` settings section; the account settings page is a hard-coded list of sections.
 - `app/javascript/dashboard/i18n/locale/en/index.js`, `app/javascript/dashboard/i18n/locale/ar/index.js`: import the `idleAway.json` namespace; locale indexes are the only loaders.
+- `config/routes.rb`: adds `get 'reports/live_sla', to: 'live_sla#index'` in the v1 accounts scope for the live SLA board; routes are a single file with no extension hook.
