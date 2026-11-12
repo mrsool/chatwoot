@@ -23,4 +23,21 @@ describe('StillThereModal', () => {
     await wrapper.find('[data-testid="still-there-confirm"]').trigger('click');
     expect(wrapper.emitted('confirm')).toHaveLength(1);
   });
+
+  it('labels the dialog and focuses the confirm button on open', async () => {
+    const wrapper = mount(StillThereModal, {
+      props: { show: false, secondsLeft: 60 },
+      attachTo: document.body,
+      global: { mocks: { $t: key => key } },
+    });
+    await wrapper.setProps({ show: true });
+    await wrapper.vm.$nextTick();
+    const dialog = wrapper.find('[role="alertdialog"]');
+    const title = wrapper.find(`#${dialog.attributes('aria-labelledby')}`);
+    expect(title.text()).toBe('IDLE_AWAY.PROMPT.TITLE');
+    expect(document.activeElement).toBe(
+      wrapper.find('[data-testid="still-there-confirm"]').element
+    );
+    wrapper.unmount();
+  });
 });

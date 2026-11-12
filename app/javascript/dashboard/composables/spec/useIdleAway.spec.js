@@ -164,4 +164,44 @@ describe('useIdleAway', () => {
     scope.stop();
     expect(vi.getTimerCount()).toBe(0);
   });
+
+  it('refreshes activity on activation so a stale key does not prompt', async () => {
+    storage.setItem(KEY, Date.now() - 10 * MIN);
+    availability.value = 'away';
+    const api = start();
+    availability.value = 'online';
+    await Promise.resolve();
+    vi.advanceTimersByTime(1000);
+    expect(api.isPromptOpen.value).toBe(false);
+    expect(Number(storage.getItem(KEY))).toBeGreaterThan(Date.now() - 2000);
+  });
+
+  it('refreshes activity on load with a stale key', () => {
+    storage.setItem(KEY, Date.now() - 10 * MIN);
+    const api = start();
+    vi.advanceTimersByTime(1000);
+    expect(api.isPromptOpen.value).toBe(false);
+  });
+
+  it('ignores ticks while setAway is pending and calls it once', async () => {
+    let resolve;
+    setAway.mockImplementation(
+      () =>
+        new Promise(r => {
+          resolve = r;
+        })
+    );
+    const api = start();
+    vi.advanceTimersByTime(MIN + 60_000);
+    expect(setAway).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(10_000);
+    expect(api.isPromptOpen.value).toBe(false);
+    expect(setAway).toHaveBeenCalledTimes(1);
+    resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    vi.advanceTimersByTime(MIN - 2000);
+    expect(api.isPromptOpen.value).toBe(false);
+    expect(setAway).toHaveBeenCalledTimes(1);
+  });
 });

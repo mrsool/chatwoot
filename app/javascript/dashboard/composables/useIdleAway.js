@@ -33,6 +33,7 @@ export function useIdleAway({
   let deadline = 0;
   let openedAt = 0;
   let lastWrite = 0;
+  let inFlight = false;
 
   const readLastActivity = () => {
     try {
@@ -83,15 +84,20 @@ export function useIdleAway({
 
   const goAway = async () => {
     closePrompt();
+    inFlight = true;
     try {
       await setAway(toValue(reasonId));
     } catch {
-      // setAway surfaces its own error; restart the idle clock, no retry
+      // setAway surfaces its own error; no retry
+    } finally {
+      // restart the idle clock either way, then let ticks resume
       writeActivity();
+      inFlight = false;
     }
   };
 
   const tick = () => {
+    if (inFlight) return;
     const current = now();
     if (!isPromptOpen.value) {
       const idleMs = current - readLastActivity();
@@ -142,9 +148,9 @@ export function useIdleAway({
     active => {
       if (active) {
         if (intervalId) return;
-        // Starting (or coming back online) counts as activity unless another
-        // tab already recorded something more recent.
-        if (!readLastActivity()) writeActivity();
+        // Becoming active (page load, or back online after Away) starts a
+        // fresh idle window; any older stored timestamp is stale.
+        writeActivity();
         attach();
         intervalId = setInterval(tick, TICK_MS);
       } else {
