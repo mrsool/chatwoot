@@ -75,6 +75,8 @@ en:
       cannot_revoke_current: You cannot revoke the current session.
 
   errors:
+    account_user:
+      away_reason_required: Away reason is required
     account:
       not_authorized: You are not authorized to access this account
       email_limit_exceeded: The daily email limit for this account has been reached

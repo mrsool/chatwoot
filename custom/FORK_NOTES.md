@@ -7,3 +7,8 @@ Every upstream file touched by the Fazaa fork, one line each: path, change, and 
 - `app/javascript/dashboard/featureFlags.js`: mirrors the two new flags in `FEATURE_FLAGS`; the frontend flag list is a static constant with no extension point.
 - `config/routes.rb`: adds `resources :away_reasons` next to `sla_policies`; routes are a single file with no extension hook.
 - `db/migrate/20261112100000_create_away_reasons.rb`, `db/schema.rb`: new migration and generated schema for `away_reasons`; migrations live only in `db/migrate`.
+- `app/models/account_user.rb`: adds `away: 3` to the `availability` enum; enum values cannot be extended from an overlay concern.
+- `app/controllers/api/v1/profiles_controller.rb`, `app/controllers/api/v1/accounts/agents_controller.rb`: permit `:away_reason_id`; strong params are literal lists in the controller with no hook.
+- `app/views/api/v1/models/_user.json.jbuilder`, `app/views/api/v1/models/_agent.json.jbuilder`: emit `away_reason_id` and `away_reason_name`; jbuilder partials have no extension point.
+- `config/locales/en.yml`, `config/locales/ar.yml`: add `errors.account_user.away_reason_required`; locale files are loaded from `config/locales` only.
+- `db/migrate/20261112100100_add_away_reason_to_account_users.rb`, `db/schema.rb`: new column and `agent_availability_events` table; migrations live only in `db/migrate`.

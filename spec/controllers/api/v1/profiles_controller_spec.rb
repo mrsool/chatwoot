@@ -303,6 +303,32 @@ RSpec.describe 'Profile API', type: :request do
         expect(response).to have_http_status(:success)
         expect(OnlineStatusTracker.get_status(account.id, agent.id)).to eq('busy')
       end
+
+      context 'when setting away' do
+        let(:reason) { AwayReason.create!(account: account, name: 'Prayer') }
+
+        before { account.enable_features!('fazaa_wfm') }
+
+        it 'returns 422 without a reason' do
+          post '/api/v1/profile/availability',
+               params: { profile: { availability: 'away', account_id: account.id } },
+               headers: agent.create_new_auth_token, as: :json
+
+          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response.parsed_body['message']).to be_present
+        end
+
+        it 'returns the reason when one is given' do
+          post '/api/v1/profile/availability',
+               params: { profile: { availability: 'away', account_id: account.id, away_reason_id: reason.id } },
+               headers: agent.create_new_auth_token, as: :json
+
+          expect(response).to have_http_status(:success)
+          account_json = response.parsed_body['accounts'].find { |a| a['id'] == account.id }
+          expect(account_json['away_reason_id']).to eq(reason.id)
+          expect(account_json['away_reason_name']).to eq('Prayer')
+        end
+      end
     end
   end
 
