@@ -4,10 +4,12 @@
 # Rows are capped at MAX_ROWS after sorting; summary counts cover every matching row.
 class Fazaa::LiveSlaBoard
   MAX_ROWS = 500
+  # Sort order. 'na' (every timer na) rows are kept and sorted last; the frontend renders them.
   STATE_RANK = { 'breached' => 0, 'at_risk' => 1, 'on_track' => 2, 'na' => 3 }.freeze
   LIVE_CONVERSATION_STATUSES = %w[open pending snoozed].freeze
   LIVE_SLA_STATUSES = %w[active active_with_misses].freeze
   NA = { state: 'na' }.freeze
+  EXPOSED_CUSTOM_ATTRIBUTES = %w[cr_code country].freeze
 
   def initialize(account:, filters: {}, now: Time.current)
     @account = account
@@ -85,7 +87,7 @@ class Fazaa::LiveSlaBoard
       inbox: id_and_name(conversation.inbox),
       assignee: conversation.assignee && id_and_name(conversation.assignee),
       labels: conversation.cached_label_list_array,
-      custom_attributes: conversation.custom_attributes
+      custom_attributes: conversation.custom_attributes.to_h.slice(*EXPOSED_CUSTOM_ATTRIBUTES)
     }
   end
 
@@ -101,11 +103,16 @@ class Fazaa::LiveSlaBoard
     {
       frt: timer(policy.first_response_time_threshold, conversation.first_reply_created_at.blank?,
                  events.any?(&:frt?)) { applied_sla.frt_due_at(working_hours_by_day_cache: cache) },
-      nrt: timer(policy.next_response_time_threshold, conversation.waiting_since.present?,
+      nrt: timer(policy.next_response_time_threshold, nrt_applies?(conversation),
                  current_nrt_miss?(events, conversation)) { applied_sla.nrt_due_at(working_hours_by_day_cache: cache) },
       rt: timer(policy.resolution_time_threshold, !conversation.resolved?,
                 events.any?(&:rt?)) { applied_sla.rt_due_at(working_hours_by_day_cache: cache) }
     }
+  end
+
+  # Mirrors Sla::EvaluateAppliedSlaService#check_nrt: NRT starts only after the first reply.
+  def nrt_applies?(conversation)
+    conversation.first_reply_created_at.present? && conversation.waiting_since.present?
   end
 
   # NRT misses are logged per waiting period, so only an event from the current one counts.
@@ -123,6 +130,7 @@ class Fazaa::LiveSlaBoard
   end
 
   def timer_state(due_at, threshold, missed)
+    # Business-hours policies: wall-clock time left vs a threshold in business seconds, so at_risk may be under-reported near close.
     remaining = due_at - @now.to_i
     return 'breached' if missed || remaining <= 0
     return 'at_risk' if remaining < threshold * @at_risk_percent / 100.0

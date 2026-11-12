@@ -9,7 +9,7 @@ RSpec.describe 'Live SLA API', type: :request do
   before do
     account.enable_features!('sla', 'fazaa_sla_live')
     policy = create(:sla_policy, account: account)
-    conversation = create(:conversation, account: account, custom_attributes: { 'cr_code' => 'CR124' })
+    conversation = create(:conversation, account: account, custom_attributes: { 'cr_code' => 'CR124', 'email' => 'x@example.com' })
     create(:applied_sla, conversation: conversation, sla_policy: policy, account: account)
   end
 

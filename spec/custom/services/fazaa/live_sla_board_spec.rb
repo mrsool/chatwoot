@@ -94,22 +94,29 @@ RSpec.describe Fazaa::LiveSlaBoard do
 
     it 'runs nrt from waiting_since' do
       conversation = create_sla_conversation(age: 1000, policy: policy)
-      conversation.update!(waiting_since: now - 580)
+      conversation.update!(first_reply_created_at: now - 900, waiting_since: now - 580)
 
       expect(row_for(board, conversation)[:timers][:nrt]).to eq(state: 'at_risk', due_at: (now + 20).to_i, threshold_seconds: 600)
+    end
+
+    it 'reports nrt as na before the first reply even while waiting' do
+      conversation = create_sla_conversation(age: 1000, policy: policy)
+      conversation.update!(waiting_since: now - 590)
+
+      expect(row_for(board, conversation)[:timers][:nrt]).to eq(state: 'na')
     end
 
     it 'ignores an nrt SlaEvent from an earlier waiting period' do
       conversation = create_sla_conversation(age: 1000, policy: policy)
       create(:sla_event, applied_sla: conversation.applied_sla, conversation: conversation, event_type: 'nrt', created_at: now - 300)
-      conversation.update!(waiting_since: now - 10)
+      conversation.update!(first_reply_created_at: now - 900, waiting_since: now - 10)
 
       expect(row_for(board, conversation)[:timers][:nrt][:state]).to eq('on_track')
     end
 
     it 'counts an nrt SlaEvent from the current waiting period as breached' do
       conversation = create_sla_conversation(age: 1000, policy: policy)
-      conversation.update!(waiting_since: now - 10)
+      conversation.update!(first_reply_created_at: now - 900, waiting_since: now - 10)
       create(:sla_event, applied_sla: conversation.applied_sla, conversation: conversation, event_type: 'nrt', created_at: now - 5)
 
       expect(row_for(board, conversation)[:timers][:nrt][:state]).to eq('breached')
@@ -182,7 +189,8 @@ RSpec.describe Fazaa::LiveSlaBoard do
     it 'serialises the row' do
       agent = create(:user, account: account, role: :agent, name: 'Agent A')
       create(:inbox_member, user: agent, inbox: inbox)
-      conversation = create_sla_conversation(age: 10, assignee: agent, custom_attributes: { 'cr_code' => 'CR124' })
+      attributes = { 'cr_code' => 'CR124', 'country' => 'SA', 'phone' => '+966500000000' }
+      conversation = create_sla_conversation(age: 10, assignee: agent, custom_attributes: attributes)
       conversation.update!(label_list: ['vip'])
 
       row = row_for(board, conversation)
@@ -193,7 +201,7 @@ RSpec.describe Fazaa::LiveSlaBoard do
         assignee: { id: agent.id, name: 'Agent A' },
         sla_policy: { id: frt_policy.id, name: frt_policy.name },
         labels: ['vip'],
-        custom_attributes: { 'cr_code' => 'CR124' }
+        custom_attributes: { 'cr_code' => 'CR124', 'country' => 'SA' }
       )
     end
 
