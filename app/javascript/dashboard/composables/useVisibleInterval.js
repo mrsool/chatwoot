@@ -4,6 +4,7 @@ import { onMounted, onBeforeUnmount } from 'vue';
 // `fn` immediately when the tab becomes visible again.
 export const useVisibleInterval = (fn, ms, { immediate = false } = {}) => {
   let timer = null;
+  let halted = false;
 
   const stop = () => {
     clearInterval(timer);
@@ -11,13 +12,19 @@ export const useVisibleInterval = (fn, ms, { immediate = false } = {}) => {
   };
   const start = runNow => {
     stop();
-    if (document.hidden) return;
+    if (halted || document.hidden) return;
     if (runNow) fn();
     timer = setInterval(fn, ms);
   };
   const onVisibility = () => {
     if (document.hidden) stop();
     else start(true);
+  };
+
+  // Permanently stops the interval (it will not restart on visibility)
+  const halt = () => {
+    halted = true;
+    stop();
   };
 
   onMounted(() => {
@@ -28,4 +35,6 @@ export const useVisibleInterval = (fn, ms, { immediate = false } = {}) => {
     stop();
     document.removeEventListener('visibilitychange', onVisibility);
   });
+
+  return { halt };
 };

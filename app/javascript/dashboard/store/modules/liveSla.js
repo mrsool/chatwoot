@@ -9,6 +9,7 @@ export const state = {
   // so a wrong local clock never distorts the countdown.
   fetchedAt: 0,
   staleSince: null,
+  forbidden: false,
 };
 
 export const getters = {
@@ -17,6 +18,7 @@ export const getters = {
   getServerTime: _state => _state.serverTime,
   getFetchedAt: _state => _state.fetchedAt,
   getStaleSince: _state => _state.staleSince,
+  getForbidden: _state => _state.forbidden,
 };
 
 const compact = filters =>
@@ -26,13 +28,26 @@ const compact = filters =>
     )
   );
 
+// Only the most recent request may update the store, so a slow older
+// response (or one made with old filters) never overwrites newer data.
+let latest = 0;
+
 export const actions = {
   fetch: async ({ commit }, filters = {}) => {
+    latest += 1;
+    const id = latest;
+    const fetchedAt = Date.now();
     try {
       const { data } = await LiveSlaAPI.get(compact(filters));
-      commit(types.SET_LIVE_SLA, { ...data, fetchedAt: Date.now() });
+      if (id !== latest) return;
+      commit(types.SET_LIVE_SLA, { ...data, fetchedAt });
     } catch (error) {
-      commit(types.SET_LIVE_SLA_STALE, Date.now());
+      if (id !== latest) return;
+      if (error?.response?.status === 403) {
+        commit(types.SET_LIVE_SLA_FORBIDDEN);
+      } else {
+        commit(types.SET_LIVE_SLA_STALE, Date.now());
+      }
     }
   },
 };
@@ -44,6 +59,9 @@ export const mutations = {
     _state.serverTime = data.server_time;
     _state.fetchedAt = data.fetchedAt;
     _state.staleSince = null;
+  },
+  [types.SET_LIVE_SLA_FORBIDDEN](_state) {
+    _state.forbidden = true;
   },
   [types.SET_LIVE_SLA_STALE](_state, at) {
     // Keep the original moment the data went stale across repeated failures

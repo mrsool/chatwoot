@@ -1,3 +1,4 @@
+import { ref } from 'vue';
 import { mount } from '@vue/test-utils';
 import { createStore } from 'vuex';
 import LiveSla from '../LiveSla.vue';
@@ -14,6 +15,8 @@ const setHidden = hidden => {
   document.dispatchEvent(new Event('visibilitychange'));
 };
 
+const forbidden = ref(false);
+
 const build = () => {
   const fetch = vi.fn();
   const noop = { namespaced: true, actions: { get: vi.fn() } };
@@ -28,6 +31,7 @@ const build = () => {
           getServerTime: () => 0,
           getFetchedAt: () => 0,
           getStaleSince: () => null,
+          getForbidden: () => forbidden.value,
         },
         actions: { fetch },
       },
@@ -49,6 +53,7 @@ const build = () => {
 
 describe('LiveSla page', () => {
   beforeEach(() => {
+    forbidden.value = false;
     vi.useFakeTimers();
     setHidden(false);
   });
@@ -87,6 +92,17 @@ describe('LiveSla page', () => {
     await wrapper.vm.$nextTick();
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(fetch.mock.calls[0][1]).toEqual({ inbox_id: 2 });
+    wrapper.unmount();
+  });
+
+  it('stops polling once the endpoint is forbidden', async () => {
+    const { fetch, wrapper } = build();
+    forbidden.value = true;
+    await wrapper.vm.$nextTick();
+    fetch.mockClear();
+    await vi.advanceTimersByTimeAsync(20000);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(wrapper.find('[data-test="forbidden"]').exists()).toBe(true);
     wrapper.unmount();
   });
 });

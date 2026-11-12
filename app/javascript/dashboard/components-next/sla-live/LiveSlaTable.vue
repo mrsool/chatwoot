@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { frontendURL, conversationUrl } from 'dashboard/helper/URLHelper';
@@ -18,6 +18,12 @@ const router = useRouter();
 
 const TIMERS = ['frt', 'nrt', 'rt'];
 const now = ref(Date.now());
+watch(
+  () => props.fetchedAt,
+  () => {
+    now.value = Date.now();
+  }
+);
 useVisibleInterval(() => {
   now.value = Date.now();
 }, 1000);

@@ -1,5 +1,6 @@
 <script setup>
 import { reactive, watch } from 'vue';
+import { useDebounceFn } from '@vueuse/core';
 import { useI18n } from 'vue-i18n';
 import { useMapGetter } from 'dashboard/composables/store';
 
@@ -22,7 +23,15 @@ const filters = reactive({
   country: '',
 });
 
-watch(filters, () => emit('change', { ...filters }));
+const emitChange = () => emit('change', { ...filters });
+const emitChangeDebounced = useDebounceFn(emitChange, 400);
+const TEXT_KEYS = ['cr_code', 'country'];
+
+TEXT_KEYS.forEach(key => watch(() => filters[key], emitChangeDebounced));
+watch(
+  () => Object.entries(filters).filter(([k]) => !TEXT_KEYS.includes(k)),
+  emitChange
+);
 
 const SELECTS = [
   {

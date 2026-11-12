@@ -38,6 +38,31 @@ describe('liveSla store', () => {
       });
     });
 
+    it('lets the latest request win when responses arrive out of order', async () => {
+      let resolveOld;
+      axios.get
+        .mockReturnValueOnce(
+          new Promise(r => {
+            resolveOld = r;
+          })
+        )
+        .mockResolvedValueOnce({ data: { ...payload, server_time: 2000 } });
+      const commit = vi.fn();
+      const older = actions.fetch({ commit }, { inbox_id: 1 });
+      await actions.fetch({ commit }, { inbox_id: 2 });
+      resolveOld({ data: { ...payload, server_time: 1 } });
+      await older;
+      expect(commit).toHaveBeenCalledTimes(1);
+      expect(commit.mock.calls[0][1].server_time).toBe(2000);
+    });
+
+    it('sets forbidden on 403 without marking stale', async () => {
+      axios.get.mockRejectedValue({ response: { status: 403 } });
+      const commit = vi.fn();
+      await actions.fetch({ commit }, {});
+      expect(commit).toHaveBeenCalledWith(types.SET_LIVE_SLA_FORBIDDEN);
+    });
+
     it('keeps previous rows and sets staleSince when the request fails', async () => {
       axios.get.mockRejectedValue(new Error('boom'));
       const state = { rows: payload.rows, staleSince: null, uiFlags: {} };

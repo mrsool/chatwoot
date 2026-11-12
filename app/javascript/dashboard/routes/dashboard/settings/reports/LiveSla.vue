@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useVisibleInterval } from 'dashboard/composables/useVisibleInterval';
@@ -17,6 +17,7 @@ const summary = useMapGetter('liveSla/getSummary');
 const serverTime = useMapGetter('liveSla/getServerTime');
 const fetchedAt = useMapGetter('liveSla/getFetchedAt');
 const staleSince = useMapGetter('liveSla/getStaleSince');
+const forbidden = useMapGetter('liveSla/getForbidden');
 
 const filters = ref({});
 const fetchLive = () => store.dispatch('liveSla/fetch', filters.value);
@@ -24,7 +25,11 @@ const fetchLive = () => store.dispatch('liveSla/fetch', filters.value);
 ['agents', 'inboxes', 'teams', 'labels', 'sla'].forEach(name =>
   store.dispatch(`${name}/get`)
 );
-useVisibleInterval(fetchLive, POLL_MS, { immediate: true });
+const { halt } = useVisibleInterval(fetchLive, POLL_MS, { immediate: true });
+
+watch(forbidden, isForbidden => {
+  if (isForbidden) halt();
+});
 
 const onFilterChange = params => {
   filters.value = params;
@@ -35,6 +40,9 @@ const onFilterChange = params => {
 <template>
   <ReportHeader :header-title="t('LIVE_SLA.TITLE')" />
   <div class="flex flex-col flex-1 gap-6">
+    <p v-if="forbidden" data-test="forbidden" class="text-n-ruby-11">
+      {{ t('LIVE_SLA.FORBIDDEN') }}
+    </p>
     <LiveSlaFilters @change="onFilterChange" />
     <LiveSlaSummary :summary="summary" :stale-since="staleSince" />
     <LiveSlaTable
