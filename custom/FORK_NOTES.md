@@ -13,3 +13,4 @@ Every upstream file touched by the Fazaa fork, one line each: path, change, and 
 - `config/locales/en.yml`, `config/locales/ar.yml`: add `errors.account_user.away_reason_required`; locale files are loaded from `config/locales` only.
 - `db/migrate/20261112100100_add_away_reason_to_account_users.rb`, `db/schema.rb`: new column and `agent_availability_events` table; migrations live only in `db/migrate`.
 - `config/locales/en.yml`, `config/locales/ar.yml`: also add `conversations.activity.assignee.requeued_on_away` and `requeued_status`; locale files are loaded from `config/locales` only.
+- `app/models/concerns/account_settings_schema.rb`: adds `idle_away_timeout_minutes`, `idle_away_reason_id`, `sla_at_risk_threshold_percent`, `sla_live_hit_rate_window_hours` to `SETTINGS_PARAMS_SCHEMA`; the schema is a single constant with no extension point.
