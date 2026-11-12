@@ -229,7 +229,57 @@ describe('#actions', () => {
       );
       expect(commit.mock.calls).toEqual([
         [types.SET_CURRENT_USER_AVAILABILITY, 'online'],
+        [types.CLEAR_CURRENT_USER_AWAY_REASON],
       ]);
+    });
+
+    it('clears the away reason when presence moves off away', () => {
+      const localCommit = vi.fn();
+      actions.setCurrentUserAvailability(
+        {
+          commit: localCommit,
+          dispatch,
+          getters: { getCurrentUserAvailability: 'away' },
+          state: { currentUser: { id: 1 } },
+        },
+        { 1: 'offline' }
+      );
+      expect(localCommit.mock.calls).toEqual([
+        [types.SET_CURRENT_USER_AVAILABILITY, 'offline'],
+        [types.CLEAR_CURRENT_USER_AWAY_REASON],
+      ]);
+    });
+
+    it('refreshes the profile when presence newly becomes away', () => {
+      const localCommit = vi.fn();
+      const localDispatch = vi.fn();
+      actions.setCurrentUserAvailability(
+        {
+          commit: localCommit,
+          dispatch: localDispatch,
+          getters: { getCurrentUserAvailability: 'online' },
+          state: { currentUser: { id: 1 } },
+        },
+        { 1: 'away' }
+      );
+      expect(localCommit.mock.calls).toEqual([
+        [types.SET_CURRENT_USER_AVAILABILITY, 'away'],
+      ]);
+      expect(localDispatch).toHaveBeenCalledWith('validityCheck');
+    });
+
+    it('does not refetch when already away', () => {
+      const localDispatch = vi.fn();
+      actions.setCurrentUserAvailability(
+        {
+          commit: vi.fn(),
+          dispatch: localDispatch,
+          getters: { getCurrentUserAvailability: 'away' },
+          state: { currentUser: { id: 1 } },
+        },
+        { 1: 'away' }
+      );
+      expect(localDispatch).not.toHaveBeenCalled();
     });
 
     it('does not send correct mutations if user id is not available', async () => {

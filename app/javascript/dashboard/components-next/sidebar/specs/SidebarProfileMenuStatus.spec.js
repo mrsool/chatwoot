@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { ref } from 'vue';
 import SidebarProfileMenuStatus from '../SidebarProfileMenuStatus.vue';
+import { useAwayReasonPicker } from 'dashboard/composables/useAwayReasonPicker';
 
 const dispatch = vi.fn();
 let flagOn = false;
@@ -44,8 +45,6 @@ const mountStatus = () =>
         ToggleSwitch: true,
         Icon: true,
         Button: { template: '<button><slot /></button>' },
-        'woot-modal': { template: '<div class="modal"><slot /></div>' },
-        AwayReasonPicker: true,
       },
       directives: { tooltip: () => {} },
     },
@@ -76,15 +75,18 @@ describe('SidebarProfileMenuStatus', () => {
     ).toBe(true);
   });
 
-  it('choosing Away opens the picker instead of saving', async () => {
+  it('choosing Away requests the picker instead of saving', async () => {
     flagOn = true;
     const wrapper = mountStatus();
-    expect(wrapper.find('away-reason-picker-stub').exists()).toBe(false);
+    const { isAwayReasonPickerOpen, closeAwayReasonPicker } =
+      useAwayReasonPicker();
+    closeAwayReasonPicker();
+    expect(isAwayReasonPickerOpen.value).toBe(false);
     const away = wrapper
       .findAll('.item')
       .find(i => i.text() === 'PROFILE_SETTINGS.FORM.AVAILABILITY.STATUS.AWAY');
     await away.trigger('click');
     expect(dispatch).not.toHaveBeenCalled();
-    expect(wrapper.find('away-reason-picker-stub').exists()).toBe(true);
+    expect(isAwayReasonPickerOpen.value).toBe(true);
   });
 });

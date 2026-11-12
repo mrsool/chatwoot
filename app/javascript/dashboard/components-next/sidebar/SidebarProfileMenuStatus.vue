@@ -1,12 +1,12 @@
 <script setup>
-import { computed, h, ref } from 'vue';
+import { computed, h } from 'vue';
 import { useMapGetter, useStore } from 'dashboard/composables/store';
 import wootConstants from 'dashboard/constants/globals';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 import { useImpersonation } from 'dashboard/composables/useImpersonation';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
-import AwayReasonPicker from './AwayReasonPicker.vue';
+import { useAwayReasonPicker } from 'dashboard/composables/useAwayReasonPicker';
 
 import {
   DropdownContainer,
@@ -28,7 +28,7 @@ const isFeatureEnabledonAccount = useMapGetter(
   'accounts/isFeatureEnabledonAccount'
 );
 
-const showAwayReasonPicker = ref(false);
+const { openAwayReasonPicker } = useAwayReasonPicker();
 const isAwayEnabled = computed(() =>
   isFeatureEnabledonAccount.value(
     currentAccountId.value,
@@ -97,7 +97,7 @@ function changeAvailabilityStatus(availability) {
     return;
   }
   if (availability === 'away') {
-    showAwayReasonPicker.value = true;
+    openAwayReasonPicker();
     return;
   }
   try {
@@ -112,13 +112,6 @@ function changeAvailabilityStatus(availability) {
 </script>
 
 <template>
-  <woot-modal
-    v-if="showAwayReasonPicker"
-    v-model:show="showAwayReasonPicker"
-    :on-close="() => (showAwayReasonPicker = false)"
-  >
-    <AwayReasonPicker @close="showAwayReasonPicker = false" />
-  </woot-modal>
   <DropdownSection class="[&>ul]:overflow-visible">
     <div class="grid gap-0">
       <DropdownItem preserve-open class="gap-1">

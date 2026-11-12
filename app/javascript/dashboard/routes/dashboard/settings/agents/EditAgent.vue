@@ -109,13 +109,23 @@ const statusList = computed(() => {
   ];
 });
 
-const availabilityStatuses = computed(() =>
-  statusList.value.map((statusLabel, index) => ({
+const availabilityStatuses = computed(() => [
+  ...statusList.value.map((statusLabel, index) => ({
     label: statusLabel,
     value: AVAILABILITY_STATUS_KEYS[index],
     disabled: props.availability === AVAILABILITY_STATUS_KEYS[index],
-  }))
-);
+  })),
+  // Display-only: admins can't set Away (it needs a reason)
+  ...(props.availability === 'away'
+    ? [
+        {
+          label: t('PROFILE_SETTINGS.FORM.AVAILABILITY.STATUS.AWAY'),
+          value: 'away',
+          disabled: true,
+        },
+      ]
+    : []),
+]);
 
 const editAgent = async () => {
   v$.value.$touch();
@@ -125,8 +135,11 @@ const editAgent = async () => {
     const payload = {
       id: props.id,
       name: agentName.value,
-      availability: agentAvailability.value,
     };
+    // Away can't be set by an admin (needs a reason); leave it untouched
+    if (agentAvailability.value !== 'away') {
+      payload.availability = agentAvailability.value;
+    }
 
     if (selectedRole.value.name.startsWith('custom_')) {
       payload.custom_role_id = selectedRole.value.id;
@@ -194,6 +207,7 @@ const resetPassword = async () => {
               v-for="status in availabilityStatuses"
               :key="status.value"
               :value="status.value"
+              :disabled="status.value === 'away'"
             >
               {{ status.label }}
             </option>

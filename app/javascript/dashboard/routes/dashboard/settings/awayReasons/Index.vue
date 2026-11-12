@@ -26,6 +26,9 @@ const selectedReason = ref(null);
 const sortedReasons = computed(() =>
   [...reasons.value].sort((a, b) => a.position - b.position)
 );
+const activeCount = computed(
+  () => reasons.value.filter(reason => reason.active).length
+);
 const nextPosition = computed(
   () => Math.max(0, ...reasons.value.map(r => r.position)) + 1
 );
@@ -52,8 +55,10 @@ const run = async (action, payload, successMessage) => {
   try {
     await store.dispatch(action, payload);
     if (successMessage) useAlert(successMessage);
+    return true;
   } catch (error) {
     useAlert(error.message || t('AWAY_REASONS.API.UPDATE_ERROR'));
+    return false;
   }
 };
 
@@ -75,14 +80,18 @@ const move = async (index, offset) => {
   const current = sortedReasons.value[index];
   const neighbour = sortedReasons.value[index + offset];
   if (!neighbour) return;
-  await run('awayReasons/update', {
+  const firstOk = await run('awayReasons/update', {
     id: current.id,
     position: neighbour.position,
   });
-  await run('awayReasons/update', {
-    id: neighbour.id,
-    position: current.position,
-  });
+  const secondOk =
+    firstOk &&
+    (await run('awayReasons/update', {
+      id: neighbour.id,
+      position: current.position,
+    }));
+  // Resync on any failure so the list reflects the server's positions
+  if (!secondOk) store.dispatch('awayReasons/get', { all: true });
 };
 </script>
 
@@ -99,7 +108,7 @@ const move = async (index, offset) => {
       >
         <template v-if="reasons.length" #count>
           <span class="text-body-main text-n-slate-11">
-            {{ $t('AWAY_REASONS.COUNT', { n: reasons.length }) }}
+            {{ $t('AWAY_REASONS.COUNT', { n: activeCount }) }}
           </span>
         </template>
         <template #actions>

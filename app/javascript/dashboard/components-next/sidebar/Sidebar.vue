@@ -15,6 +15,8 @@ import { useWindowSize, useEventListener } from '@vueuse/core';
 import Button from 'dashboard/components-next/button/Button.vue';
 import SidebarGroup from './SidebarGroup.vue';
 import SidebarProfileMenu from './SidebarProfileMenu.vue';
+import AwayReasonPicker from './AwayReasonPicker.vue';
+import { useAwayReasonPicker } from 'dashboard/composables/useAwayReasonPicker';
 import SidebarChangelogCard from './SidebarChangelogCard.vue';
 import SidebarChangelogButton from './SidebarChangelogButton.vue';
 import ChannelLeaf from './ChannelLeaf.vue';
@@ -84,6 +86,8 @@ const hasAdvancedAssignment = computed(() => {
     FEATURE_FLAGS.ADVANCED_ASSIGNMENT
   );
 });
+
+const { isAwayReasonPickerOpen, closeAwayReasonPicker } = useAwayReasonPicker();
 
 const hasFazaaWfm = computed(() => {
   return isFeatureEnabledonAccount.value(
@@ -1139,5 +1143,12 @@ const menuItems = computed(() => {
         :class="{ 'bg-n-brand': isResizing }"
       />
     </div>
+    <woot-modal
+      v-if="isAwayReasonPickerOpen"
+      :show="isAwayReasonPickerOpen"
+      :on-close="closeAwayReasonPicker"
+    >
+      <AwayReasonPicker @close="closeAwayReasonPicker" />
+    </woot-modal>
   </aside>
 </template>
