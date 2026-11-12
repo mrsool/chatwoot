@@ -12,3 +12,4 @@ Every upstream file touched by the Fazaa fork, one line each: path, change, and 
 - `app/views/api/v1/models/_user.json.jbuilder`, `app/views/api/v1/models/_agent.json.jbuilder`: emit `away_reason_id` and `away_reason_name`; jbuilder partials have no extension point.
 - `config/locales/en.yml`, `config/locales/ar.yml`: add `errors.account_user.away_reason_required`; locale files are loaded from `config/locales` only.
 - `db/migrate/20261112100100_add_away_reason_to_account_users.rb`, `db/schema.rb`: new column and `agent_availability_events` table; migrations live only in `db/migrate`.
+- `config/locales/en.yml`, `config/locales/ar.yml`: also add `conversations.activity.assignee.requeued_on_away` and `requeued_status`; locale files are loaded from `config/locales` only.
