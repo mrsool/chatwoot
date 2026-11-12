@@ -34,6 +34,13 @@ describe('Helper functions', () => {
       expect(values).toEqual(['busy']);
     });
 
+    it('should map availability 3 to away', () => {
+      const { values } = extractChangedAccountUserValues({
+        availability: [0, 3],
+      });
+      expect(values).toEqual(['away']);
+    });
+
     it('should correctly extract values when both are changed', () => {
       const changes = {
         role: [1, 0],

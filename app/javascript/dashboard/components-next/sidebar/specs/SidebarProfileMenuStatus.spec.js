@@ -5,12 +5,14 @@ import { useAwayReasonPicker } from 'dashboard/composables/useAwayReasonPicker';
 
 const dispatch = vi.fn();
 let flagOn = false;
+let availability = 'online';
 
 vi.mock('dashboard/composables/store', () => ({
   useStore: () => ({ dispatch }),
   useMapGetter: key => {
     const values = {
-      getCurrentUserAvailability: 'online',
+      getCurrentUserAvailability: availability,
+      getCurrentUserAwayReasonName: 'Prayer',
       getCurrentAccountId: 9,
       getCurrentUserAutoOffline: false,
       'accounts/isFeatureEnabledonAccount': () => flagOn,
@@ -53,7 +55,10 @@ const mountStatus = () =>
 const labels = wrapper => wrapper.findAll('.item').map(i => i.text());
 
 describe('SidebarProfileMenuStatus', () => {
-  beforeEach(() => dispatch.mockClear());
+  beforeEach(() => {
+    dispatch.mockClear();
+    availability = 'online';
+  });
 
   it('hides Away when fazaa_wfm is off', () => {
     flagOn = false;
@@ -88,5 +93,21 @@ describe('SidebarProfileMenuStatus', () => {
     await away.trigger('click');
     expect(dispatch).not.toHaveBeenCalled();
     expect(isAwayReasonPickerOpen.value).toBe(true);
+  });
+
+  it('keeps showing Away as active when fazaa_wfm is off, but not selectable', () => {
+    flagOn = false;
+    availability = 'away';
+    const wrapper = mountStatus();
+    expect(wrapper.find('button').text()).toContain(
+      'PROFILE_SETTINGS.FORM.AVAILABILITY.STATUS.AWAY · Prayer'
+    );
+    const options = wrapper.findAll('ul .item').map(i => i.text());
+    expect(options).not.toContain(
+      'PROFILE_SETTINGS.FORM.AVAILABILITY.STATUS.AWAY'
+    );
+    expect(options).toContain(
+      'PROFILE_SETTINGS.FORM.AVAILABILITY.STATUS.ONLINE'
+    );
   });
 });

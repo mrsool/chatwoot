@@ -1081,7 +1081,8 @@
             "enum": [
               "online",
               "busy",
-              "offline"
+              "offline",
+              "away"
             ],
             "readOnly": true,
             "description": "The effective availability status of the agent, derived from the configured availability, auto-offline setting, and current presence. To update an agent's configured availability, use the availability field in create or update requests."
@@ -2914,7 +2915,8 @@
             "enum": [
               "online",
               "busy",
-              "offline"
+              "offline",
+              "away"
             ],
             "description": "The configured availability of the agent.",
             "example": "online"
@@ -2946,7 +2948,8 @@
             "enum": [
               "online",
               "busy",
-              "offline"
+              "offline",
+              "away"
             ],
             "description": "The configured availability of the agent.",
             "example": "online"

@@ -100,6 +100,7 @@ describe('#getters', () => {
     expect(getters.getAgentStatus(state)).toEqual({
       online: 1,
       busy: 0,
+      away: 0,
       offline: 1,
     });
   });
@@ -126,7 +127,24 @@ describe('#getters', () => {
     expect(getters.getAgentStatus(state)).toEqual({
       online: 1,
       busy: 0,
+      away: 0,
       offline: 1,
+    });
+  });
+
+  it('getAgentStatus counts away agents', () => {
+    const state = {
+      records: [
+        { id: 1, availability_status: 'online' },
+        { id: 2, availability_status: 'away' },
+        { id: 3, availability_status: 'away' },
+      ],
+    };
+    expect(getters.getAgentStatus(state)).toEqual({
+      online: 1,
+      busy: 0,
+      away: 2,
+      offline: 0,
     });
   });
 });

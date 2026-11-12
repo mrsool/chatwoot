@@ -756,6 +756,7 @@
       "HEADER": "Agent status",
       "ONLINE": "Online",
       "BUSY": "Busy",
+      "AWAY": "Away",
       "OFFLINE": "Offline"
     }
   },

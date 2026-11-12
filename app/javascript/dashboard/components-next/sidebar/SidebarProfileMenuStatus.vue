@@ -55,22 +55,27 @@ const statusColors = [
   'bg-n-amber-11',
 ];
 
+const allStatuses = computed(() => {
+  return statusList.value.map((statusLabel, index) => ({
+    label: statusLabel,
+    value: AVAILABILITY_STATUS_KEYS[index],
+    color: statusColors[index],
+    icon: h('span', { class: [statusColors[index], 'size-[12px] rounded'] }),
+    active: currentUserAvailability.value === AVAILABILITY_STATUS_KEYS[index],
+  }));
+});
+
+// Away is only selectable with fazaa_wfm on, but an agent who is already
+// away (e.g. the flag was turned off meanwhile) still sees it as active.
 const availabilityStatuses = computed(() => {
-  return statusList.value
-    .map((statusLabel, index) => ({
-      label: statusLabel,
-      value: AVAILABILITY_STATUS_KEYS[index],
-      color: statusColors[index],
-      icon: h('span', { class: [statusColors[index], 'size-[12px] rounded'] }),
-      active: currentUserAvailability.value === AVAILABILITY_STATUS_KEYS[index],
-    }))
-    .filter(status => status.value !== 'away' || isAwayEnabled.value);
+  return allStatuses.value.filter(
+    status => status.value !== 'away' || isAwayEnabled.value
+  );
 });
 
 const activeStatus = computed(() => {
   return (
-    availabilityStatuses.value.find(status => status.active) ||
-    availabilityStatuses.value[0]
+    allStatuses.value.find(status => status.active) || allStatuses.value[0]
   );
 });
 
