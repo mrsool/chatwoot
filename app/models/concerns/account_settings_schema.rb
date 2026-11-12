@@ -18,8 +18,8 @@ module AccountSettingsSchema
         'captain_auto_resolve_mode': { 'type': %w[string null], 'enum': ['evaluated', 'legacy', 'disabled', nil] },
         'idle_away_timeout_minutes': { 'type': %w[integer null], 'minimum': 1, 'maximum': 240 },
         'idle_away_reason_id': { 'type': %w[integer null] },
-        'sla_at_risk_threshold_percent': { 'type': 'integer', 'minimum': 1, 'maximum': 99 },
-        'sla_live_hit_rate_window_hours': { 'type': 'integer', 'minimum': 1, 'maximum': 168 },
+        'sla_at_risk_threshold_percent': { 'type': %w[integer null], 'minimum': 1, 'maximum': 99 },
+        'sla_live_hit_rate_window_hours': { 'type': %w[integer null], 'minimum': 1, 'maximum': 168 },
         'conversation_required_attributes': {
           'type': %w[array null],
           'items': { 'type': 'string' }

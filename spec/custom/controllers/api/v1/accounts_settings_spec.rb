@@ -34,6 +34,39 @@ RSpec.describe 'Fazaa account settings', type: :request do
       end
     end
 
+    it 'resets the idle timeout to null, which disables idle auto-away' do
+      account.update!(idle_away_timeout_minutes: 10, idle_away_reason_id: reason.id)
+
+      patch_settings(idle_away_timeout_minutes: nil)
+
+      expect(response).to have_http_status(:success)
+      account.reload
+      expect(account.settings).to include('idle_away_timeout_minutes' => nil)
+      expect(account.fazaa_idle_enabled?).to be(false)
+    end
+
+    it 'resets the live SLA settings to null, falling back to the defaults' do
+      account.update!(sla_at_risk_threshold_percent: 30, sla_live_hit_rate_window_hours: 48)
+
+      patch_settings(sla_at_risk_threshold_percent: nil, sla_live_hit_rate_window_hours: nil)
+
+      expect(response).to have_http_status(:success)
+      account.reload
+      expect(account.settings).to include('sla_at_risk_threshold_percent' => nil, 'sla_live_hit_rate_window_hours' => nil)
+      expect(account.sla_at_risk_threshold_percent).to eq(20)
+      expect(account.sla_live_hit_rate_window_hours).to eq(24)
+    end
+
+    it 'is denied for a non-admin' do
+      agent = create(:user, account: account, role: :agent)
+
+      patch "/api/v1/accounts/#{account.id}", params: { idle_away_timeout_minutes: 10 },
+                                              headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(account.reload.settings).not_to have_key('idle_away_timeout_minutes')
+    end
+
     it 'rejects out-of-range SLA settings' do
       patch_settings(sla_at_risk_threshold_percent: 100)
       expect(response).to have_http_status(:unprocessable_entity)
