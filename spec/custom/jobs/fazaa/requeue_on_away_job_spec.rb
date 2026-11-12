@@ -55,7 +55,95 @@ RSpec.describe Fazaa::RequeueOnAwayJob do
     expect(conversation.messages.activity.where('content LIKE ?', '%Requeued%')).to be_empty
   end
 
-  it 'handles an agent with no chats' do
+  def requeue_notes(conversation)
+    conversation.messages.activity.where('content LIKE ?', '%Requeued%')
+  end
+
+  it 'handles an agent with no chats without creating any note' do
+    other_chat = create(:conversation, account: account, inbox: inbox, assignee: other, status: :open)
+
     expect { described_class.perform_now(account.id, agent.id) }.not_to raise_error
+    expect(Message.where(account_id: account.id).where('content LIKE ?', '%Requeued%')).to be_empty
+    expect(other_chat.reload.assignee_id).to eq(other.id)
+  end
+
+  it 'leaves a chat untouched when it is resolved or reassigned after the batch was loaded' do
+    first = chat(:open)
+    resolved_later = chat(:open)
+    reassigned_later = chat(:open)
+    raced = false
+    allow(Conversations::AssignmentService).to receive(:new).and_wrap_original do |original, **kwargs|
+      unless raced
+        raced = true
+        resolved_later.update_columns(status: Conversation.statuses[:resolved]) # rubocop:disable Rails/SkipsModelValidations
+        reassigned_later.update_columns(assignee_id: other.id) # rubocop:disable Rails/SkipsModelValidations
+      end
+      original.call(**kwargs)
+    end
+
+    described_class.perform_now(account.id, agent.id)
+
+    expect(first.reload.assignee_id).to be_nil
+    expect(resolved_later.reload.assignee_id).to eq(agent.id)
+    expect(requeue_notes(resolved_later)).to be_empty
+    expect(reassigned_later.reload.assignee_id).to eq(other.id)
+    expect(requeue_notes(reassigned_later)).to be_empty
+  end
+
+  it 'unassigns each chat once with one note when two jobs run for the same user' do
+    chats = [chat(:open), chat(:open)]
+    second_job_ran = false
+    allow_any_instance_of(Conversation).to receive(:fazaa_post_requeue_note).and_wrap_original do |original, *args| # rubocop:disable RSpec/AnyInstance
+      result = original.call(*args)
+      unless second_job_ran
+        second_job_ran = true
+        described_class.perform_now(account.id, agent.id)
+      end
+      result
+    end
+
+    described_class.perform_now(account.id, agent.id)
+
+    chats.each do |c|
+      expect(c.reload.assignee_id).to be_nil
+      expect(requeue_notes(c).count).to eq(1)
+    end
+  end
+
+  it 'isolates a failing chat, reports it and continues with the rest' do
+    failing = chat(:open)
+    healthy = chat(:open)
+    allow(Conversations::AssignmentService).to receive(:new).and_wrap_original do |original, **kwargs|
+      raise StandardError, 'boom' if kwargs[:conversation].id == failing.id
+
+      original.call(**kwargs)
+    end
+    tracker = instance_double(ChatwootExceptionTracker, capture_exception: true)
+    allow(ChatwootExceptionTracker).to receive(:new).and_return(tracker)
+
+    expect { described_class.perform_now(account.id, agent.id) }.not_to raise_error
+
+    expect(ChatwootExceptionTracker).to have_received(:new).with(an_instance_of(StandardError), account: account)
+    expect(healthy.reload.assignee_id).to be_nil
+    expect(requeue_notes(healthy).count).to eq(1)
+    expect(failing.reload.assignee_id).to eq(agent.id)
+    expect(requeue_notes(failing)).to be_empty
+  end
+
+  it 'logs one line with the chat count and latency since the availability change' do
+    chat(:open)
+    chat(:pending)
+    AgentAvailabilityEvent.where(account_id: account.id, user_id: agent.id).update_all(changed_at: 2.seconds.ago) # rubocop:disable Rails/SkipsModelValidations
+    lines = []
+    allow(Rails.logger).to receive(:info).and_wrap_original do |original, *args, &block|
+      lines << args.first if args.first.to_s.start_with?('[fazaa.requeue]')
+      original.call(*args, &block)
+    end
+
+    described_class.perform_now(account.id, agent.id)
+
+    expect(lines.size).to eq(1)
+    expect(lines.first).to match(/\A\[fazaa\.requeue\] account=#{account.id} user=#{agent.id} chats=2 latency_ms=\d+\z/)
+    expect(lines.first[/latency_ms=(\d+)/, 1].to_i).to be >= 2000
   end
 end
