@@ -36,6 +36,11 @@ RSpec.describe AccountUser do
       expect(event.changed_at).to be_present
     end
 
+    it 'drops a stray reason on a non-away agent' do
+      account_user.update!(away_reason_id: reason.id)
+      expect(account_user.reload.away_reason_id).to be_nil
+    end
+
     context 'when already away' do
       before { account_user.update!(availability: :away, away_reason_id: reason.id) }
 
@@ -43,6 +48,15 @@ RSpec.describe AccountUser do
         expect { account_user.update!(availability: :online) }.to change(AgentAvailabilityEvent, :count).by(1)
         expect(account_user.reload.away_reason_id).to be_nil
         expect(AgentAvailabilityEvent.last.status).to eq('online')
+      end
+
+      it 'rejects switching to a reason from another account' do
+        other = AwayReason.create!(account: create(:account), name: 'Other')
+        expect(account_user.update(away_reason_id: other.id)).to be(false)
+      end
+
+      it 'rejects clearing the reason while away' do
+        expect(account_user.update(away_reason_id: nil)).to be(false)
       end
 
       it 'stays valid on an unrelated save after the reason is deactivated' do
@@ -64,6 +78,7 @@ RSpec.describe AccountUser do
     it 'rejects away' do
       account_user.assign_attributes(availability: :away, away_reason_id: reason.id)
       expect(account_user).not_to be_valid
+      expect(account_user.errors.full_messages.join).to include('not enabled')
     end
   end
 end

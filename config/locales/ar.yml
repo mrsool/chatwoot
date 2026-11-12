@@ -60,6 +60,7 @@ ar:
   errors:
     account_user:
       away_reason_required: سبب الغياب مطلوب
+      away_not_enabled: حالة الغياب غير مفعّلة لهذا الحساب
     account:
       not_authorized: You are not authorized to access this account
       email_limit_exceeded: The daily email limit for this account has been reached

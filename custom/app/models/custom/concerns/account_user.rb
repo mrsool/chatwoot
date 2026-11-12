@@ -4,8 +4,8 @@ module Custom::Concerns::AccountUser
   included do
     belongs_to :away_reason, optional: true
 
-    before_validation :clear_away_reason, if: :will_save_change_to_availability?
-    validate :away_reason_allowed, if: -> { will_save_change_to_availability? && away? }
+    before_validation :clear_away_reason
+    validate :away_reason_allowed, if: -> { away? && (will_save_change_to_availability? || will_save_change_to_away_reason_id?) }
     after_update_commit :record_availability_change, if: :saved_change_to_availability?
   end
 
@@ -16,7 +16,8 @@ module Custom::Concerns::AccountUser
   end
 
   def away_reason_allowed
-    return if account.feature_enabled?('fazaa_wfm') && account.away_reasons.active.exists?(id: away_reason_id)
+    return errors.add(:base, I18n.t('errors.account_user.away_not_enabled')) unless account.feature_enabled?('fazaa_wfm')
+    return if account.away_reasons.active.exists?(id: away_reason_id)
 
     errors.add(:base, I18n.t('errors.account_user.away_reason_required'))
   end

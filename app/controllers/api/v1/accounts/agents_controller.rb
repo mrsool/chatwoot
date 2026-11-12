@@ -23,8 +23,10 @@ class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
   end
 
   def update
-    @agent.update!(agent_params.slice(:name).compact)
-    @agent.current_account_user.update!(agent_params.slice(*account_user_attributes).compact)
+    ActiveRecord::Base.transaction do
+      @agent.update!(agent_params.slice(:name).compact)
+      @agent.current_account_user.update!(agent_params.slice(*account_user_attributes).compact)
+    end
   end
 
   def destroy
@@ -72,7 +74,7 @@ class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
   end
 
   def agents
-    @agents ||= Current.account.users.order_by_full_name.includes(:account_users, { avatar_attachment: [:blob] })
+    @agents ||= Current.account.users.order_by_full_name.includes({ account_users: :away_reason }, { avatar_attachment: [:blob] })
   end
 
   def bulk_create_agents(emails)
