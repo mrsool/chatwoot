@@ -1,0 +1,52 @@
+{
+  "AWAY_REASONS": {
+    "HEADER": "Away reasons",
+    "DESCRIPTION": "Reasons agents can choose from when they set their status to Away. Deactivated reasons are hidden from agents but kept for reporting.",
+    "ADD_ACTION": "Add reason",
+    "LOADING": "Fetching away reasons",
+    "COUNT": "{n} reason | {n} reasons",
+    "LIST": {
+      "404": "There are no away reasons in this account.",
+      "TABLE_HEADER": {
+        "NAME": "Name",
+        "STATUS": "Status",
+        "ORDER": "Order"
+      },
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "MOVE_UP": "Move up",
+      "MOVE_DOWN": "Move down"
+    },
+    "PICKER": {
+      "TITLE": "Set yourself as Away",
+      "DESCRIPTION": "Select a reason so your team knows why you are away.",
+      "SELECT_REASON": "Select a reason",
+      "EMPTY": "No away reasons are available. Please ask an administrator to add one.",
+      "SAVE": "Save",
+      "CANCEL": "Cancel",
+      "ERROR": "Couldn't set your status to Away, please try again"
+    },
+    "FORM": {
+      "ADD_TITLE": "Add away reason",
+      "EDIT_TITLE": "Rename away reason",
+      "NAME": {
+        "LABEL": "Name",
+        "PLACEHOLDER": "Enter the reason name",
+        "REQUIRED_ERROR": "Name is required"
+      },
+      "SAVE": "Save",
+      "CANCEL": "Cancel"
+    },
+    "EDIT": "Rename",
+    "DEACTIVATE": "Deactivate",
+    "REACTIVATE": "Reactivate",
+    "API": {
+      "ADD_SUCCESS": "Away reason added successfully",
+      "ADD_ERROR": "Couldn't add the away reason, please try again",
+      "UPDATE_SUCCESS": "Away reason updated successfully",
+      "UPDATE_ERROR": "Couldn't update the away reason, please try again",
+      "DEACTIVATE_SUCCESS": "Away reason deactivated",
+      "REACTIVATE_SUCCESS": "Away reason reactivated"
+    }
+  }
+}

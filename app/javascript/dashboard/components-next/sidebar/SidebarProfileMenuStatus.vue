@@ -1,10 +1,12 @@
 <script setup>
-import { computed, h } from 'vue';
+import { computed, h, ref } from 'vue';
 import { useMapGetter, useStore } from 'dashboard/composables/store';
 import wootConstants from 'dashboard/constants/globals';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 import { useImpersonation } from 'dashboard/composables/useImpersonation';
+import { FEATURE_FLAGS } from 'dashboard/featureFlags';
+import AwayReasonPicker from './AwayReasonPicker.vue';
 
 import {
   DropdownContainer,
@@ -21,6 +23,18 @@ const store = useStore();
 const currentUserAvailability = useMapGetter('getCurrentUserAvailability');
 const currentAccountId = useMapGetter('getCurrentAccountId');
 const currentUserAutoOffline = useMapGetter('getCurrentUserAutoOffline');
+const currentUserAwayReasonName = useMapGetter('getCurrentUserAwayReasonName');
+const isFeatureEnabledonAccount = useMapGetter(
+  'accounts/isFeatureEnabledonAccount'
+);
+
+const showAwayReasonPicker = ref(false);
+const isAwayEnabled = computed(() =>
+  isFeatureEnabledonAccount.value(
+    currentAccountId.value,
+    FEATURE_FLAGS.FAZAA_WFM
+  )
+);
 
 const { isImpersonating } = useImpersonation();
 
@@ -30,23 +44,41 @@ const statusList = computed(() => {
     t('PROFILE_SETTINGS.FORM.AVAILABILITY.STATUS.ONLINE'),
     t('PROFILE_SETTINGS.FORM.AVAILABILITY.STATUS.BUSY'),
     t('PROFILE_SETTINGS.FORM.AVAILABILITY.STATUS.OFFLINE'),
+    t('PROFILE_SETTINGS.FORM.AVAILABILITY.STATUS.AWAY'),
   ];
 });
 
-const statusColors = ['bg-n-teal-9', 'bg-n-amber-9', 'bg-n-slate-9'];
+const statusColors = [
+  'bg-n-teal-9',
+  'bg-n-amber-9',
+  'bg-n-slate-9',
+  'bg-n-amber-11',
+];
 
 const availabilityStatuses = computed(() => {
-  return statusList.value.map((statusLabel, index) => ({
-    label: statusLabel,
-    value: AVAILABILITY_STATUS_KEYS[index],
-    color: statusColors[index],
-    icon: h('span', { class: [statusColors[index], 'size-[12px] rounded'] }),
-    active: currentUserAvailability.value === AVAILABILITY_STATUS_KEYS[index],
-  }));
+  return statusList.value
+    .map((statusLabel, index) => ({
+      label: statusLabel,
+      value: AVAILABILITY_STATUS_KEYS[index],
+      color: statusColors[index],
+      icon: h('span', { class: [statusColors[index], 'size-[12px] rounded'] }),
+      active: currentUserAvailability.value === AVAILABILITY_STATUS_KEYS[index],
+    }))
+    .filter(status => status.value !== 'away' || isAwayEnabled.value);
 });
 
 const activeStatus = computed(() => {
-  return availabilityStatuses.value.find(status => status.active);
+  return (
+    availabilityStatuses.value.find(status => status.active) ||
+    availabilityStatuses.value[0]
+  );
+});
+
+const activeStatusLabel = computed(() => {
+  const { label, value } = activeStatus.value;
+  return value === 'away' && currentUserAwayReasonName.value
+    ? `${label} · ${currentUserAwayReasonName.value}`
+    : label;
 });
 
 const autoOfflineToggle = computed({
@@ -64,6 +96,10 @@ function changeAvailabilityStatus(availability) {
     useAlert(t('PROFILE_SETTINGS.FORM.AVAILABILITY.IMPERSONATING_ERROR'));
     return;
   }
+  if (availability === 'away') {
+    showAwayReasonPicker.value = true;
+    return;
+  }
   try {
     store.dispatch('updateAvailability', {
       availability,
@@ -76,6 +112,13 @@ function changeAvailabilityStatus(availability) {
 </script>
 
 <template>
+  <woot-modal
+    v-if="showAwayReasonPicker"
+    v-model:show="showAwayReasonPicker"
+    :on-close="() => (showAwayReasonPicker = false)"
+  >
+    <AwayReasonPicker @close="showAwayReasonPicker = false" />
+  </woot-modal>
   <DropdownSection class="[&>ul]:overflow-visible">
     <div class="grid gap-0">
       <DropdownItem preserve-open class="gap-1">
@@ -97,7 +140,7 @@ function changeAvailabilityStatus(availability) {
                   <div class="size-2 rounded-sm" :class="activeStatus.color" />
                 </div>
                 <span class="truncate max-w-[7rem]">
-                  {{ activeStatus.label }}
+                  {{ activeStatusLabel }}
                 </span>
               </div>
             </Button>

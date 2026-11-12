@@ -96,6 +96,32 @@ describe('#actions', () => {
     });
   });
 
+  describe('#updateAvailability (away)', () => {
+    it('rolls back and throws the server message when away fails', async () => {
+      const localCommit = vi.fn();
+      axios.post.mockRejectedValue({
+        response: { data: { message: 'Away reason is inactive' } },
+      });
+      await expect(
+        actions.updateAvailability(
+          {
+            commit: localCommit,
+            dispatch,
+            getters: { getCurrentUserAvailability: 'online' },
+          },
+          { availability: 'away', account_id: 1, away_reason_id: 4 }
+        )
+      ).rejects.toThrow('Away reason is inactive');
+      expect(localCommit.mock.calls).toEqual([
+        [types.SET_CURRENT_USER_AVAILABILITY, 'away'],
+        [types.SET_CURRENT_USER_AVAILABILITY, 'online'],
+      ]);
+      expect(axios.post.mock.calls.at(-1)[1]).toEqual({
+        profile: { availability: 'away', account_id: 1, away_reason_id: 4 },
+      });
+    });
+  });
+
   describe('#updateAutoOffline', () => {
     it('sends correct actions if API is success', async () => {
       axios.post.mockResolvedValue({

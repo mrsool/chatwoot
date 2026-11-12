@@ -212,7 +212,8 @@
         "STATUS": {
           "ONLINE": "متصل",
           "BUSY": "مشغول",
-          "OFFLINE": "غير متصل"
+          "OFFLINE": "غير متصل",
+          "AWAY": "غائب"
         },
         "SET_AVAILABILITY_SUCCESS": "تم تعيين التوافر بنجاح",
         "SET_AVAILABILITY_ERROR": "تعذر تعيين التوافر، الرجاء المحاولة مرة أخرى",
@@ -379,6 +380,7 @@
     "SET_AVAILABILITY_TITLE": "تعيين نفسك كـ",
     "SET_YOUR_AVAILABILITY": "قم بتعيين توافرك",
     "SLA": "SLA",
+    "AWAY_REASONS": "أسباب الغياب",
     "CUSTOM_ROLES": "Custom Roles",
     "BETA": "تجريبي",
     "REPORTS_OVERVIEW": "نظرة عامة",

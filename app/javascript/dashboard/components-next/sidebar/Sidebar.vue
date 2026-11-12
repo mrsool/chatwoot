@@ -85,6 +85,13 @@ const hasAdvancedAssignment = computed(() => {
   );
 });
 
+const hasFazaaWfm = computed(() => {
+  return isFeatureEnabledonAccount.value(
+    accountId.value,
+    FEATURE_FLAGS.FAZAA_WFM
+  );
+});
+
 const hasConversationUnreadCounts = computed(() => {
   return isFeatureEnabledonAccount.value(
     accountId.value,
@@ -945,6 +952,16 @@ const menuItems = computed(() => {
           icon: 'i-lucide-clock-alert',
           to: accountScopedRoute('sla_list'),
         },
+        ...(hasFazaaWfm.value
+          ? [
+              {
+                name: 'Settings Away Reasons',
+                label: t('SIDEBAR.AWAY_REASONS'),
+                icon: 'i-lucide-coffee',
+                to: accountScopedRoute('away_reasons_list'),
+              },
+            ]
+          : []),
         {
           name: 'Conversation Workflow',
           label: t('SIDEBAR.CONVERSATION_WORKFLOW'),

@@ -1,7 +1,7 @@
 import types from '../mutation-types';
 import authAPI from '../../api/auth';
 
-import { setUser, clearCookiesOnLogout } from '../utils/api';
+import { setUser, clearCookiesOnLogout, throwErrorMessage } from '../utils/api';
 import SessionStorage from 'shared/helpers/sessionStorage';
 import { SESSION_STORAGE_KEYS } from 'dashboard/constants/sessionStorage';
 
@@ -42,6 +42,14 @@ export const getters = {
       account => account.id === $getters.getCurrentAccountId
     );
     return currentAccount.availability;
+  },
+
+  getCurrentUserAwayReasonName($state, $getters) {
+    const { accounts = [] } = $state.currentUser;
+    const currentAccount = accounts.find(
+      account => account.id === $getters.getCurrentAccountId
+    );
+    return currentAccount?.away_reason_name || null;
   },
 
   getCurrentUserAutoOffline($state, $getters) {
@@ -191,6 +199,8 @@ export const actions = {
     } catch (error) {
       // revert back to previous status if update fails
       commit(types.SET_CURRENT_USER_AVAILABILITY, previousStatus);
+      // Away can be rejected by the server (e.g. inactive reason); surface it
+      if (params.availability === 'away') throwErrorMessage(error);
     }
   },
 
