@@ -36,6 +36,7 @@ import settings from './settings.json';
 import signup from './signup.json';
 import sla from './sla.json';
 import awayReasons from './awayReasons.json';
+import idleAway from './idleAway.json';
 import snooze from './snooze.json';
 import teamsSettings from './teamsSettings.json';
 import whatsappTemplates from './whatsappTemplates.json';
@@ -85,6 +86,7 @@ export default {
   ...signup,
   ...sla,
   ...awayReasons,
+  ...idleAway,
   ...snooze,
   ...teamsSettings,
   ...whatsappTemplates,
