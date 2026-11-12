@@ -50,6 +50,14 @@ RSpec.describe AccountUser do
         expect(AgentAvailabilityEvent.last.status).to eq('online')
       end
 
+      it 'logs a reason switch as one event without requeueing' do
+        break_reason = AwayReason.create!(account: account, name: 'Break')
+        clear_enqueued_jobs
+        expect { account_user.update!(away_reason_id: break_reason.id) }.to change(AgentAvailabilityEvent, :count).by(1)
+        expect(Fazaa::RequeueOnAwayJob).not_to have_been_enqueued
+        expect(AgentAvailabilityEvent.last).to have_attributes(status: 'away', away_reason_id: break_reason.id)
+      end
+
       it 'rejects switching to a reason from another account' do
         other = AwayReason.create!(account: create(:account), name: 'Other')
         expect(account_user.update(away_reason_id: other.id)).to be(false)

@@ -58,6 +58,13 @@ RSpec.describe 'Away Reasons API', type: :request do
       expect(account.away_reasons.find_by(name: 'Prayer')).to be_present
       expect(response.parsed_body['payload']['name']).to eq('Prayer')
     end
+
+    it 'returns 422 with the uniqueness message when a concurrent insert hits the unique index' do
+      allow_any_instance_of(ActiveRecord::Validations::UniquenessValidator).to receive(:validate_each) # rubocop:disable RSpec/AnyInstance
+      post base_url, params: { away_reason: { name: 'lunch' } }, headers: administrator.create_new_auth_token
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body['message']).to eq('Name has already been taken')
+    end
   end
 
   describe 'PATCH #update' do
@@ -67,6 +74,23 @@ RSpec.describe 'Away Reasons API', type: :request do
                                         headers: administrator.create_new_auth_token
       expect(response).to have_http_status(:success)
       expect(reason.reload).to have_attributes(name: 'Meal', position: 9)
+    end
+
+    it 'is forbidden for agents' do
+      reason = account.away_reasons.find_by(name: 'Lunch')
+      patch "#{base_url}/#{reason.id}", params: { away_reason: { name: 'Meal' } }, headers: agent.create_new_auth_token
+      expect(response).to have_http_status(:unauthorized)
+      expect(reason.reload.name).to eq('Lunch')
+    end
+
+    it 'returns 422 with the uniqueness message when the rename hits the unique index' do
+      allow_any_instance_of(ActiveRecord::Validations::UniquenessValidator).to receive(:validate_each) # rubocop:disable RSpec/AnyInstance
+      reason = account.away_reasons.find_by(name: 'Lunch')
+      patch "#{base_url}/#{reason.id}", params: { away_reason: { name: 'PRAYER BREAK' } },
+                                        headers: administrator.create_new_auth_token
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body['message']).to eq('Name has already been taken')
+      expect(reason.reload.name).to eq('Lunch')
     end
   end
 

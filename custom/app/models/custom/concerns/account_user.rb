@@ -6,7 +6,7 @@ module Custom::Concerns::AccountUser
 
     before_validation :clear_away_reason
     validate :away_reason_allowed, if: -> { away? && (will_save_change_to_availability? || will_save_change_to_away_reason_id?) }
-    after_update_commit :record_availability_change, if: :saved_change_to_availability?
+    after_update_commit :record_availability_change, if: -> { saved_change_to_availability? || saved_change_to_away_reason_id? }
   end
 
   private
@@ -22,10 +22,12 @@ module Custom::Concerns::AccountUser
     errors.add(:base, I18n.t('errors.account_user.away_reason_required'))
   end
 
+  # A reason switch while away is logged too, but only an availability change can requeue chats.
   def record_availability_change
-    previous = saved_change_to_availability.first
     AgentAvailabilityEvent.create!(account_id: account_id, user_id: user_id, status: availability,
                                    away_reason_id: away_reason_id, changed_at: Time.current)
-    Fazaa::AvailabilityChanged.call(account_user: self, previous: previous)
+    return unless saved_change_to_availability?
+
+    Fazaa::AvailabilityChanged.call(account_user: self, previous: saved_change_to_availability.first)
   end
 end
