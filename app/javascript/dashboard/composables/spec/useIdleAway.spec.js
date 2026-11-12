@@ -18,6 +18,7 @@ describe('useIdleAway', () => {
   let availability;
   let setAway;
   let timeoutMinutes;
+  let onError;
 
   const start = () => {
     let api;
@@ -28,6 +29,7 @@ describe('useIdleAway', () => {
         reasonId: 7,
         getAvailability: () => availability.value,
         setAway,
+        onError,
         now: () => Date.now(),
         storage,
       });
@@ -42,6 +44,7 @@ describe('useIdleAway', () => {
     availability = ref('online');
     timeoutMinutes = ref(1);
     setAway = vi.fn().mockResolvedValue();
+    onError = vi.fn();
   });
 
   afterEach(() => {
@@ -93,6 +96,27 @@ describe('useIdleAway', () => {
     vi.advanceTimersByTime(MIN - 1000);
     expect(api.isPromptOpen.value).toBe(false);
     expect(setAway).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports a failed setAway through onError and still resets the timer', async () => {
+    const failure = new Error('Away reason is inactive');
+    setAway.mockRejectedValue(failure);
+    start();
+    vi.advanceTimersByTime(MIN + 60_000);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledWith(failure);
+    expect(Number(storage.getItem(KEY))).toBe(Date.now());
+  });
+
+  it('does not call onError when setAway succeeds', async () => {
+    start();
+    vi.advanceTimersByTime(MIN + 60_000);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(setAway).toHaveBeenCalledTimes(1);
+    expect(onError).not.toHaveBeenCalled();
   });
 
   it('activity during the countdown closes the prompt', () => {

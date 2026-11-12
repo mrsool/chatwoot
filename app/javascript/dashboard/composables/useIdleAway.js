@@ -17,13 +17,15 @@ const ACTIVITY_EVENTS = [
  * Idle detector. Opens a "Still there?" prompt after `timeoutMinutes` without
  * activity (shared across tabs through localStorage), then calls `setAway`
  * once if nobody confirms within 60s. Runs only while idle is enabled
- * (`timeoutMinutes` truthy) and the agent is online or busy.
+ * (`timeoutMinutes` truthy) and the agent is online or busy. A failed
+ * `setAway` is passed to `onError`; the idle clock restarts either way.
  */
 export function useIdleAway({
   timeoutMinutes,
   reasonId,
   getAvailability,
   setAway,
+  onError = () => {},
   now = Date.now,
   storage = window.localStorage,
 }) {
@@ -87,8 +89,9 @@ export function useIdleAway({
     inFlight = true;
     try {
       await setAway(toValue(reasonId));
-    } catch {
-      // setAway surfaces its own error; no retry
+    } catch (error) {
+      // no retry; let the caller tell the agent
+      onError(error);
     } finally {
       // restart the idle clock either way, then let ticks resume
       writeActivity();

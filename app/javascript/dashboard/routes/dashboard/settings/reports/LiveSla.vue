@@ -22,6 +22,7 @@ const forbidden = useMapGetter('liveSla/getForbidden');
 const filters = ref({});
 const fetchLive = () => store.dispatch('liveSla/fetch', filters.value);
 
+store.dispatch('liveSla/resetForbidden');
 ['agents', 'inboxes', 'teams', 'labels', 'sla'].forEach(name =>
   store.dispatch(`${name}/get`)
 );

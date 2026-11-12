@@ -19,6 +19,7 @@ const forbidden = ref(false);
 
 const build = () => {
   const fetch = vi.fn();
+  const resetForbidden = vi.fn();
   const noop = { namespaced: true, actions: { get: vi.fn() } };
   const store = createStore({
     modules: {
@@ -33,7 +34,7 @@ const build = () => {
           getStaleSince: () => null,
           getForbidden: () => forbidden.value,
         },
-        actions: { fetch },
+        actions: { fetch, resetForbidden },
       },
       agents: noop,
       inboxes: noop,
@@ -48,7 +49,7 @@ const build = () => {
       stubs: { LiveSlaFilters: true, LiveSlaTable: true, LiveSlaSummary: true },
     },
   });
-  return { fetch, wrapper };
+  return { fetch, resetForbidden, wrapper };
 };
 
 describe('LiveSla page', () => {
@@ -103,6 +104,16 @@ describe('LiveSla page', () => {
     await vi.advanceTimersByTimeAsync(20000);
     expect(fetch).not.toHaveBeenCalled();
     expect(wrapper.find('[data-test="forbidden"]').exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it('resets a forbidden latch from an earlier visit before the first fetch', () => {
+    const { fetch, resetForbidden, wrapper } = build();
+    expect(resetForbidden).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(resetForbidden.mock.invocationCallOrder[0]).toBeLessThan(
+      fetch.mock.invocationCallOrder[0]
+    );
     wrapper.unmount();
   });
 });

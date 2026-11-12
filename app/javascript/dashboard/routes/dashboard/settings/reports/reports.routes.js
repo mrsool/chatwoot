@@ -165,7 +165,12 @@ export default {
         {
           path: 'live_sla',
           name: 'live_sla_reports',
-          meta: { ...meta, featureFlag: FEATURE_FLAGS.FAZAA_SLA_LIVE },
+          // The live SLA endpoint is administrator-only
+          meta: {
+            ...meta,
+            featureFlag: FEATURE_FLAGS.FAZAA_SLA_LIVE,
+            permissions: ['administrator'],
+          },
           component: LiveSla,
         },
         {

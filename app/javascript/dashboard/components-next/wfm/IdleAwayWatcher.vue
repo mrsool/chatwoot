@@ -1,9 +1,12 @@
 <script setup>
 import { computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
+import { useAlert } from 'dashboard/composables';
 import { useIdleAway } from 'dashboard/composables/useIdleAway';
 import StillThereModal from './StillThereModal.vue';
 
+const { t } = useI18n();
 const store = useStore();
 const accountId = useMapGetter('getCurrentAccountId');
 const getAccount = useMapGetter('accounts/getAccount');
@@ -35,6 +38,7 @@ const { isPromptOpen, secondsLeft, confirmPresent } = useIdleAway({
       account_id: accountId.value,
       away_reason_id: id,
     }),
+  onError: error => useAlert(error?.message || t('IDLE_AWAY.AUTO_AWAY_FAILED')),
 });
 </script>
 

@@ -63,6 +63,23 @@ describe('liveSla store', () => {
       expect(commit).toHaveBeenCalledWith(types.SET_LIVE_SLA_FORBIDDEN);
     });
 
+    it('resetForbidden commits RESET_LIVE_SLA_FORBIDDEN', () => {
+      const commit = vi.fn();
+      actions.resetForbidden({ commit });
+      expect(commit).toHaveBeenCalledWith(types.RESET_LIVE_SLA_FORBIDDEN);
+    });
+
+    it('clears forbidden once a later fetch succeeds', async () => {
+      const state = { forbidden: false, staleSince: null };
+      const commit = (type, value) => mutations[type](state, value);
+      axios.get.mockRejectedValueOnce({ response: { status: 403 } });
+      await actions.fetch({ commit }, {});
+      expect(state.forbidden).toBe(true);
+      axios.get.mockResolvedValueOnce({ data: payload });
+      await actions.fetch({ commit }, {});
+      expect(state.forbidden).toBe(false);
+    });
+
     it('keeps previous rows and sets staleSince when the request fails', async () => {
       axios.get.mockRejectedValue(new Error('boom'));
       const state = { rows: payload.rows, staleSince: null, uiFlags: {} };
@@ -84,6 +101,18 @@ describe('liveSla store', () => {
         serverTime: 1000,
         fetchedAt: 42,
       });
+    });
+
+    it('SET_LIVE_SLA clears a forbidden latch', () => {
+      const state = { forbidden: true, staleSince: null };
+      mutations[types.SET_LIVE_SLA](state, { ...payload, fetchedAt: 1 });
+      expect(state.forbidden).toBe(false);
+    });
+
+    it('RESET_LIVE_SLA_FORBIDDEN clears the forbidden latch', () => {
+      const state = { forbidden: true };
+      mutations[types.RESET_LIVE_SLA_FORBIDDEN](state);
+      expect(state.forbidden).toBe(false);
     });
 
     it('exposes the state through getters', () => {

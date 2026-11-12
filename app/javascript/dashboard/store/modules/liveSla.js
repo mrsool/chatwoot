@@ -33,6 +33,9 @@ const compact = filters =>
 let latest = 0;
 
 export const actions = {
+  // The page calls this on mount so a 403 from an earlier visit (e.g. before
+  // the user's role changed) does not keep the board halted.
+  resetForbidden: ({ commit }) => commit(types.RESET_LIVE_SLA_FORBIDDEN),
   fetch: async ({ commit }, filters = {}) => {
     latest += 1;
     const id = latest;
@@ -59,9 +62,13 @@ export const mutations = {
     _state.serverTime = data.server_time;
     _state.fetchedAt = data.fetchedAt;
     _state.staleSince = null;
+    _state.forbidden = false;
   },
   [types.SET_LIVE_SLA_FORBIDDEN](_state) {
     _state.forbidden = true;
+  },
+  [types.RESET_LIVE_SLA_FORBIDDEN](_state) {
+    _state.forbidden = false;
   },
   [types.SET_LIVE_SLA_STALE](_state, at) {
     // Keep the original moment the data went stale across repeated failures

@@ -21,6 +21,7 @@
       "TITLE": "Still there?",
       "COUNTDOWN": "You'll be set to Away in {seconds}s",
       "CONFIRM": "I'm here"
-    }
+    },
+    "AUTO_AWAY_FAILED": "Couldn't set you to Away automatically"
   }
 }
