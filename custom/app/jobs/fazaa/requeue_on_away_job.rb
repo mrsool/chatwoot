@@ -18,14 +18,16 @@ class Fazaa::RequeueOnAwayJob < ApplicationJob
   private
 
   def requeue(conversation, account_user)
-    conversation.with_lock do
+    unassigned = conversation.with_lock do
       next false unless conversation.assignee_id == account_user.user_id && (conversation.open? || conversation.pending?)
 
       Conversations::AssignmentService.new(conversation: conversation, assignee_id: nil).perform
       conversation.fazaa_post_requeue_note(account_user)
-      conversation.fazaa_reassign_after_requeue!
       true
     end
+    # Reassign only after the unassign has committed, so an assignment job never scans before the chat is free.
+    conversation.fazaa_reassign_after_requeue! if unassigned
+    unassigned
   rescue StandardError => e
     ChatwootExceptionTracker.new(e, account: account_user.account).capture_exception
     false
