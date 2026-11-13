@@ -86,8 +86,8 @@ jobs:
       - name: Verify ArgoCD target and access before release
         shell: bash
         env:
-          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER_PROD }}
-          ARGOCD_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN_PROD }}
+          ARGOCD_SERVER: https://argocd.mrsool.tools
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
         run: |
           set -euo pipefail
           ARGOCD_SERVER="${ARGOCD_SERVER%/}"
@@ -286,8 +286,8 @@ jobs:
 
       - name: Trigger ArgoCD production sync at pushed chart commit
         env:
-          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER_PROD }}
-          ARGOCD_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN_PROD }}
+          ARGOCD_SERVER: https://argocd.mrsool.tools
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
           CHART_COMMIT: ${{ steps.chart_push.outputs.chart_commit }}
         shell: bash
         run: |
@@ -304,8 +304,8 @@ jobs:
 
       - name: Verify ArgoCD synced and healthy
         env:
-          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER_PROD }}
-          ARGOCD_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN_PROD }}
+          ARGOCD_SERVER: https://argocd.mrsool.tools
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
           CHART_COMMIT: ${{ steps.chart_push.outputs.chart_commit }}
         shell: bash
         run: |
