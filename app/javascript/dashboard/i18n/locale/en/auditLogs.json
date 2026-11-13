@@ -30,6 +30,7 @@
         "WEBHOOKS": "Webhooks",
         "AUTOMATION_RULES": "Automation rules",
         "MACROS": "Macros",
+        "COMPENSATION_CAPS": "Compensation caps",
         "CONVERSATION_DELETIONS": "Conversation deletions",
       "MESSAGE_DELETIONS": "Message deletions"
       },
@@ -101,6 +102,10 @@
     },
     "ACCOUNT": {
       "EDIT": "{agentName} updated the account configuration (#{id})"
+    },
+    "COMPENSATION_CAPS": {
+      "ADD": "{agentName} updated compensation caps",
+      "EDIT": "{agentName} updated compensation caps"
     },
     "CONVERSATION": {
       "DELETE": "{agentName} deleted conversation #{id}"

@@ -96,6 +96,13 @@ const hasFazaaWfm = computed(() => {
   );
 });
 
+const hasCompensationCaps = computed(() =>
+  isFeatureEnabledonAccount.value(
+    accountId.value,
+    FEATURE_FLAGS.FAZAA_COMPENSATION_CAPS
+  )
+);
+
 const hasLiveSla = computed(() =>
   [FEATURE_FLAGS.SLA, FEATURE_FLAGS.FAZAA_SLA_LIVE].every(flag =>
     isFeatureEnabledonAccount.value(accountId.value, flag)
@@ -978,6 +985,16 @@ const menuItems = computed(() => {
                 label: t('SIDEBAR.AWAY_REASONS'),
                 icon: 'i-lucide-coffee',
                 to: accountScopedRoute('away_reasons_list'),
+              },
+            ]
+          : []),
+        ...(hasCompensationCaps.value
+          ? [
+              {
+                name: 'Settings Compensation Caps',
+                label: t('SIDEBAR.COMPENSATION_CAPS'),
+                icon: 'i-lucide-hand-coins',
+                to: accountScopedRoute('compensation_caps_index'),
               },
             ]
           : []),
