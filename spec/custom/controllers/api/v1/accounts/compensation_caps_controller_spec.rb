@@ -64,6 +64,27 @@ RSpec.describe 'Compensation Caps API', type: :request do
       expect(CompensationCapSetting.for(account).at_risk_value_limit).to be_nil
     end
 
+    it 'clears a cap to nil with a JSON null' do
+      patch_caps({ at_risk_value_limit: 30 })
+      patch_caps({ at_risk_value_limit: nil })
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body['payload']['at_risk_value_limit']).to be_nil
+      expect(CompensationCapSetting.for(account).at_risk_value_limit).to be_nil
+    end
+
+    it 'is rejected when the flag is off' do
+      account.disable_features!('fazaa_compensation_caps')
+      patch_caps({ window_days: 7 })
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'returns 422 when a concurrent first save hits the unique index' do
+      allow_any_instance_of(CompensationCapSetting).to receive(:save!).and_raise(ActiveRecord::RecordNotUnique) # rubocop:disable RSpec/AnyInstance
+      patch_caps({ window_days: 7 })
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body['message']).to be_present
+    end
+
     it 'returns 422 for invalid values' do
       patch_caps({ window_days: 0 })
       expect(response).to have_http_status(:unprocessable_entity)

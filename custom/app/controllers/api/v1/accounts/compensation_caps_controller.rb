@@ -3,6 +3,9 @@ class Api::V1::Accounts::CompensationCapsController < Api::V1::Accounts::BaseCon
   before_action :fetch_setting
   before_action :check_authorization
 
+  # Two first saves can both pass the find-or-build in `for`; the unique account index rejects the loser.
+  rescue_from ActiveRecord::RecordNotUnique, with: :render_concurrent_save
+
   def show; end
 
   def update
@@ -15,6 +18,11 @@ class Api::V1::Accounts::CompensationCapsController < Api::V1::Accounts::BaseCon
   end
 
   private
+
+  def render_concurrent_save
+    render json: { message: 'Compensation caps were just saved by someone else. Reload and try again.', attributes: [] },
+           status: :unprocessable_entity
+  end
 
   # Blank strings become nil so a cleared cap falls back to MBO's value instead of reading as 0.
   def permitted_params
