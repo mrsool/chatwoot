@@ -1,5 +1,7 @@
 name: Build Fazaa Chatwoot Production Image (AWS)
 
+run-name: "PROD Build | ${{ inputs.version_tag || github.ref_name }}"
+
 # A version tag starts a production IMAGE build, not a production deployment.
 # Manual runs are supported for recovery and must specify an existing vX.Y.Z tag.
 on:
