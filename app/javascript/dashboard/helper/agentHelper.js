@@ -11,15 +11,21 @@ export const getAgentsByAvailability = (agents, availability) => {
 };
 
 /**
- * Sorts agents by availability status: online, busy, then offline
+ * Sorts agents by availability status: online, busy, away, then offline
  * @param {Array} agents - List of agents
  * @returns {Array} Sorted list of agents
  */
 export const getSortedAgentsByAvailability = agents => {
   const onlineAgents = getAgentsByAvailability(agents, 'online');
   const busyAgents = getAgentsByAvailability(agents, 'busy');
+  const awayAgents = getAgentsByAvailability(agents, 'away');
   const offlineAgents = getAgentsByAvailability(agents, 'offline');
-  const filteredAgents = [...onlineAgents, ...busyAgents, ...offlineAgents];
+  const filteredAgents = [
+    ...onlineAgents,
+    ...busyAgents,
+    ...awayAgents,
+    ...offlineAgents,
+  ];
   return filteredAgents;
 };
 

@@ -78,6 +78,7 @@ const AVATAR_COLORS = {
 const STATUS_CLASSES = computed(() => ({
   online: 'bg-n-teal-10',
   busy: 'bg-n-amber-10',
+  away: 'bg-n-amber-11',
   ...(props.hideOfflineStatus ? {} : { offline: 'bg-n-slate-10' }),
 }));
 

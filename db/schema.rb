@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_09_24_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_12_100100) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -52,9 +52,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_24_120000) do
     t.boolean "auto_offline", default: true, null: false
     t.bigint "custom_role_id"
     t.bigint "agent_capacity_policy_id"
+    t.bigint "away_reason_id"
     t.index ["account_id", "user_id"], name: "uniq_user_id_per_account_id", unique: true
     t.index ["account_id"], name: "index_account_users_on_account_id"
     t.index ["agent_capacity_policy_id"], name: "index_account_users_on_agent_capacity_policy_id"
+    t.index ["away_reason_id"], name: "index_account_users_on_away_reason_id"
     t.index ["custom_role_id"], name: "index_account_users_on_custom_role_id"
     t.index ["user_id"], name: "index_account_users_on_user_id"
   end
@@ -112,6 +114,15 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_24_120000) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "agent_availability_events", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "user_id", null: false
+    t.integer "status", null: false
+    t.bigint "away_reason_id"
+    t.datetime "changed_at", null: false
+    t.index ["account_id", "user_id", "changed_at"], name: "index_agent_availability_events_on_account_user_changed_at"
   end
 
   create_table "agent_bot_inboxes", force: :cascade do |t|
@@ -318,6 +329,16 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_24_120000) do
     t.boolean "active", default: true, null: false
     t.integer "execution_delay"
     t.index ["account_id"], name: "index_automation_rules_on_account_id"
+  end
+
+  create_table "away_reasons", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "name", null: false
+    t.boolean "active", default: true, null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index "account_id, lower((name)::text)", name: "index_away_reasons_on_account_id_and_lower_name", unique: true
   end
 
   create_table "calls", force: :cascade do |t|
@@ -1693,6 +1714,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_24_120000) do
     t.index ["inbox_id"], name: "index_working_hours_on_inbox_id"
   end
 
+  add_foreign_key "account_users", "away_reasons", on_delete: :nullify
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "campaign_recipients", "accounts", on_delete: :cascade

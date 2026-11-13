@@ -295,3 +295,11 @@
   enabled: false
   premium: true
   column: feature_flags_ext_1
+- name: fazaa_wfm
+  display_name: Fazaa WFM
+  enabled: false
+  column: feature_flags_ext_1
+- name: fazaa_sla_live
+  display_name: Fazaa SLA Live
+  enabled: false
+  column: feature_flags_ext_1

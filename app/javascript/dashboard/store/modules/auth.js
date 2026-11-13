@@ -1,7 +1,7 @@
 import types from '../mutation-types';
 import authAPI from '../../api/auth';
 
-import { setUser, clearCookiesOnLogout } from '../utils/api';
+import { setUser, clearCookiesOnLogout, throwErrorMessage } from '../utils/api';
 import SessionStorage from 'shared/helpers/sessionStorage';
 import { SESSION_STORAGE_KEYS } from 'dashboard/constants/sessionStorage';
 
@@ -42,6 +42,14 @@ export const getters = {
       account => account.id === $getters.getCurrentAccountId
     );
     return currentAccount.availability;
+  },
+
+  getCurrentUserAwayReasonName($state, $getters) {
+    const { accounts = [] } = $state.currentUser;
+    const currentAccount = accounts.find(
+      account => account.id === $getters.getCurrentAccountId
+    );
+    return currentAccount?.away_reason_name || null;
   },
 
   getCurrentUserAutoOffline($state, $getters) {
@@ -191,6 +199,8 @@ export const actions = {
     } catch (error) {
       // revert back to previous status if update fails
       commit(types.SET_CURRENT_USER_AVAILABILITY, previousStatus);
+      // Away can be rejected by the server (e.g. inactive reason); surface it
+      if (params.availability === 'away') throwErrorMessage(error);
     }
   },
 
@@ -209,9 +219,19 @@ export const actions = {
     }
   },
 
-  setCurrentUserAvailability({ commit, state: $state }, data) {
-    if (data[$state.currentUser.id]) {
-      commit(types.SET_CURRENT_USER_AVAILABILITY, data[$state.currentUser.id]);
+  setCurrentUserAvailability(
+    { commit, dispatch, getters: _getters = {}, state: $state },
+    data
+  ) {
+    const availability = data[$state.currentUser.id];
+    if (!availability) return;
+    const previous = _getters.getCurrentUserAvailability;
+    commit(types.SET_CURRENT_USER_AVAILABILITY, availability);
+    if (availability !== 'away') {
+      commit(types.CLEAR_CURRENT_USER_AWAY_REASON);
+    } else if (previous !== 'away') {
+      // Server-driven away (idle auto-away, admin): fetch the reason it set
+      dispatch('validityCheck');
     }
   },
 
@@ -255,6 +275,15 @@ export const mutations = {
       ..._state.currentUser,
       accounts,
     };
+  },
+  [types.CLEAR_CURRENT_USER_AWAY_REASON](_state) {
+    const accounts = _state.currentUser.accounts.map(account => {
+      if (account.id === _state.currentUser.account_id) {
+        return { ...account, away_reason_id: null, away_reason_name: null };
+      }
+      return account;
+    });
+    _state.currentUser = { ..._state.currentUser, accounts };
   },
   [types.SET_CURRENT_USER_AUTO_OFFLINE](_state, autoOffline) {
     const accounts = _state.currentUser.accounts.map(account => {

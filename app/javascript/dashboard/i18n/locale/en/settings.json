@@ -212,7 +212,8 @@
         "STATUS": {
           "ONLINE": "Online",
           "BUSY": "Busy",
-          "OFFLINE": "Offline"
+          "OFFLINE": "Offline",
+          "AWAY": "Away"
         },
         "SET_AVAILABILITY_SUCCESS": "Availability has been set successfully",
         "SET_AVAILABILITY_ERROR": "Couldn't set availability, please try again",
@@ -384,6 +385,7 @@
     "SET_AVAILABILITY_TITLE": "Set yourself as",
     "SET_YOUR_AVAILABILITY": "Set your availability",
     "SLA": "SLA",
+    "AWAY_REASONS": "Away reasons",
     "CUSTOM_ROLES": "Custom Roles",
     "BETA": "Beta",
     "REPORTS_OVERVIEW": "Overview",

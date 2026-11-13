@@ -75,6 +75,9 @@ en:
       cannot_revoke_current: You cannot revoke the current session.
 
   errors:
+    account_user:
+      away_reason_required: Away reason is required
+      away_not_enabled: Away status is not enabled for this account
     account:
       not_authorized: You are not authorized to access this account
       email_limit_exceeded: The daily email limit for this account has been reached
@@ -367,6 +370,10 @@ en:
         self_assigned: '%{user_name} self-assigned this conversation'
         assigned: 'Assigned to %{assignee_name} by %{user_name}'
         removed: 'Conversation unassigned by %{user_name}'
+        requeued_on_away: 'Requeued — %{agent_name} is %{status}%{reason}'
+        requeued_status:
+          away: 'away'
+          offline: 'offline'
       team:
         assigned: 'Assigned to %{team_name} by %{user_name}'
         assigned_with_assignee: 'Assigned to %{assignee_name} via %{team_name} by %{user_name}'

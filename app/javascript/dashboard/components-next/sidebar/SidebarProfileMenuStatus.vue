@@ -5,6 +5,8 @@ import wootConstants from 'dashboard/constants/globals';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 import { useImpersonation } from 'dashboard/composables/useImpersonation';
+import { FEATURE_FLAGS } from 'dashboard/featureFlags';
+import { useAwayReasonPicker } from 'dashboard/composables/useAwayReasonPicker';
 
 import {
   DropdownContainer,
@@ -21,6 +23,18 @@ const store = useStore();
 const currentUserAvailability = useMapGetter('getCurrentUserAvailability');
 const currentAccountId = useMapGetter('getCurrentAccountId');
 const currentUserAutoOffline = useMapGetter('getCurrentUserAutoOffline');
+const currentUserAwayReasonName = useMapGetter('getCurrentUserAwayReasonName');
+const isFeatureEnabledonAccount = useMapGetter(
+  'accounts/isFeatureEnabledonAccount'
+);
+
+const { openAwayReasonPicker } = useAwayReasonPicker();
+const isAwayEnabled = computed(() =>
+  isFeatureEnabledonAccount.value(
+    currentAccountId.value,
+    FEATURE_FLAGS.FAZAA_WFM
+  )
+);
 
 const { isImpersonating } = useImpersonation();
 
@@ -30,12 +44,18 @@ const statusList = computed(() => {
     t('PROFILE_SETTINGS.FORM.AVAILABILITY.STATUS.ONLINE'),
     t('PROFILE_SETTINGS.FORM.AVAILABILITY.STATUS.BUSY'),
     t('PROFILE_SETTINGS.FORM.AVAILABILITY.STATUS.OFFLINE'),
+    t('PROFILE_SETTINGS.FORM.AVAILABILITY.STATUS.AWAY'),
   ];
 });
 
-const statusColors = ['bg-n-teal-9', 'bg-n-amber-9', 'bg-n-slate-9'];
+const statusColors = [
+  'bg-n-teal-9',
+  'bg-n-amber-9',
+  'bg-n-slate-9',
+  'bg-n-amber-11',
+];
 
-const availabilityStatuses = computed(() => {
+const allStatuses = computed(() => {
   return statusList.value.map((statusLabel, index) => ({
     label: statusLabel,
     value: AVAILABILITY_STATUS_KEYS[index],
@@ -45,8 +65,25 @@ const availabilityStatuses = computed(() => {
   }));
 });
 
+// Away is only selectable with fazaa_wfm on, but an agent who is already
+// away (e.g. the flag was turned off meanwhile) still sees it as active.
+const availabilityStatuses = computed(() => {
+  return allStatuses.value.filter(
+    status => status.value !== 'away' || isAwayEnabled.value
+  );
+});
+
 const activeStatus = computed(() => {
-  return availabilityStatuses.value.find(status => status.active);
+  return (
+    allStatuses.value.find(status => status.active) || allStatuses.value[0]
+  );
+});
+
+const activeStatusLabel = computed(() => {
+  const { label, value } = activeStatus.value;
+  return value === 'away' && currentUserAwayReasonName.value
+    ? `${label} · ${currentUserAwayReasonName.value}`
+    : label;
 });
 
 const autoOfflineToggle = computed({
@@ -62,6 +99,10 @@ const autoOfflineToggle = computed({
 function changeAvailabilityStatus(availability) {
   if (isImpersonating.value) {
     useAlert(t('PROFILE_SETTINGS.FORM.AVAILABILITY.IMPERSONATING_ERROR'));
+    return;
+  }
+  if (availability === 'away') {
+    openAwayReasonPicker();
     return;
   }
   try {
@@ -97,7 +138,7 @@ function changeAvailabilityStatus(availability) {
                   <div class="size-2 rounded-sm" :class="activeStatus.color" />
                 </div>
                 <span class="truncate max-w-[7rem]">
-                  {{ activeStatus.label }}
+                  {{ activeStatusLabel }}
                 </span>
               </div>
             </Button>

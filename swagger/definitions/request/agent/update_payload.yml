@@ -9,7 +9,7 @@ properties:
     example: 'agent'
   availability:
     type: string
-    enum: ['online', 'busy', 'offline']
+    enum: ['online', 'busy', 'offline', 'away']
     description: The configured availability of the agent.
     example: 'online'
   auto_offline:

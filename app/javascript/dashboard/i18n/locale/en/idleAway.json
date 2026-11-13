@@ -1,0 +1,27 @@
+{
+  "IDLE_AWAY": {
+    "TITLE": "Idle auto-away",
+    "NOTE": "Ask agents who have been inactive whether they are still there, and set them to Away with the chosen reason if they do not respond. Their open chats are requeued.",
+    "MINUTES": {
+      "LABEL": "Minutes of inactivity",
+      "HELP": "Between 1 and 240 minutes."
+    },
+    "REASON": {
+      "LABEL": "Reason used",
+      "HELP": "Shown as the Away reason when an agent is set to Away automatically.",
+      "PLACEHOLDER": "Select a reason"
+    },
+    "SAVE": "Save",
+    "VALIDATION": "Enter a number of minutes between 1 and 240 and select a reason.",
+    "API": {
+      "SUCCESS": "Idle auto-away settings updated",
+      "ERROR": "Could not update the idle auto-away settings"
+    },
+    "PROMPT": {
+      "TITLE": "Still there?",
+      "COUNTDOWN": "You'll be set to Away in {seconds}s",
+      "CONFIRM": "I'm here"
+    },
+    "AUTO_AWAY_FAILED": "Couldn't set you to Away automatically"
+  }
+}

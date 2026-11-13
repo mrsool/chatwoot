@@ -15,6 +15,8 @@ import { useWindowSize, useEventListener } from '@vueuse/core';
 import Button from 'dashboard/components-next/button/Button.vue';
 import SidebarGroup from './SidebarGroup.vue';
 import SidebarProfileMenu from './SidebarProfileMenu.vue';
+import AwayReasonPicker from './AwayReasonPicker.vue';
+import { useAwayReasonPicker } from 'dashboard/composables/useAwayReasonPicker';
 import SidebarChangelogCard from './SidebarChangelogCard.vue';
 import SidebarChangelogButton from './SidebarChangelogButton.vue';
 import ChannelLeaf from './ChannelLeaf.vue';
@@ -84,6 +86,21 @@ const hasAdvancedAssignment = computed(() => {
     FEATURE_FLAGS.ADVANCED_ASSIGNMENT
   );
 });
+
+const { isAwayReasonPickerOpen, closeAwayReasonPicker } = useAwayReasonPicker();
+
+const hasFazaaWfm = computed(() => {
+  return isFeatureEnabledonAccount.value(
+    accountId.value,
+    FEATURE_FLAGS.FAZAA_WFM
+  );
+});
+
+const hasLiveSla = computed(() =>
+  [FEATURE_FLAGS.SLA, FEATURE_FLAGS.FAZAA_SLA_LIVE].every(flag =>
+    isFeatureEnabledonAccount.value(accountId.value, flag)
+  )
+);
 
 const hasConversationUnreadCounts = computed(() => {
   return isFeatureEnabledonAccount.value(
@@ -711,6 +728,15 @@ const menuItems = computed(() => {
           label: t('SIDEBAR.REPORTS_SLA'),
           to: accountScopedRoute('sla_reports'),
         },
+        ...(hasLiveSla.value
+          ? [
+              {
+                name: 'Reports Live SLA',
+                label: t('LIVE_SLA.TITLE'),
+                to: accountScopedRoute('live_sla_reports'),
+              },
+            ]
+          : []),
         {
           name: 'Reports Bot',
           label: t('SIDEBAR.REPORTS_BOT'),
@@ -945,6 +971,16 @@ const menuItems = computed(() => {
           icon: 'i-lucide-clock-alert',
           to: accountScopedRoute('sla_list'),
         },
+        ...(hasFazaaWfm.value
+          ? [
+              {
+                name: 'Settings Away Reasons',
+                label: t('SIDEBAR.AWAY_REASONS'),
+                icon: 'i-lucide-coffee',
+                to: accountScopedRoute('away_reasons_list'),
+              },
+            ]
+          : []),
         {
           name: 'Conversation Workflow',
           label: t('SIDEBAR.CONVERSATION_WORKFLOW'),
@@ -1122,5 +1158,12 @@ const menuItems = computed(() => {
         :class="{ 'bg-n-brand': isResizing }"
       />
     </div>
+    <woot-modal
+      v-if="isAwayReasonPickerOpen"
+      :show="isAwayReasonPickerOpen"
+      :on-close="closeAwayReasonPicker"
+    >
+      <AwayReasonPicker @close="closeAwayReasonPicker" />
+    </woot-modal>
   </aside>
 </template>

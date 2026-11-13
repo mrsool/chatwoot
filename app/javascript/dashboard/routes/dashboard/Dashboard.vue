@@ -24,6 +24,9 @@ const FloatingCallWidget = defineAsyncComponent(
 import CopilotLauncher from 'dashboard/components-next/copilot/CopilotLauncher.vue';
 import CopilotContainer from 'dashboard/components/copilot/CopilotContainer.vue';
 
+import IdleAwayWatcher from 'dashboard/components-next/wfm/IdleAwayWatcher.vue';
+import { useMapGetter } from 'dashboard/composables/store';
+import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 import MobileSidebarLauncher from 'dashboard/components-next/sidebar/MobileSidebarLauncher.vue';
 import { useCallsStore } from 'dashboard/stores/calls';
 
@@ -38,6 +41,7 @@ export default {
     CopilotContainer,
     FloatingCallWidget,
     MobileSidebarLauncher,
+    IdleAwayWatcher,
   },
   setup() {
     const upgradePageRef = ref(null);
@@ -45,6 +49,9 @@ export default {
     const { accountId } = useAccount();
     const { width: windowWidth } = useWindowSize();
     const callsStore = useCallsStore();
+    const isFeatureEnabledonAccount = useMapGetter(
+      'accounts/isFeatureEnabledonAccount'
+    );
 
     return {
       uiSettings,
@@ -52,6 +59,12 @@ export default {
       accountId,
       upgradePageRef,
       windowWidth,
+      hasFazaaWfm: computed(() =>
+        isFeatureEnabledonAccount.value(
+          accountId.value,
+          FEATURE_FLAGS.FAZAA_WFM
+        )
+      ),
       hasActiveCall: computed(() => callsStore.hasActiveCall),
       hasIncomingCall: computed(() => callsStore.hasIncomingCall),
     };
@@ -162,6 +175,7 @@ export default {
         <CopilotContainer />
         <FloatingCallWidget v-if="hasActiveCall || hasIncomingCall" />
       </template>
+      <IdleAwayWatcher v-if="hasFazaaWfm" />
       <CommandBar :is-paywalled="isAccountPaywalled" />
       <AddAccountModal
         :show="showCreateAccountModal"

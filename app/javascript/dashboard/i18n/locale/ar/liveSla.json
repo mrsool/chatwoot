@@ -1,0 +1,33 @@
+{
+  "LIVE_SLA": {
+    "TITLE": "SLA المباشر",
+    "BREACHED": "متجاوز",
+    "AT_RISK": "معرّض للخطر",
+    "ON_TRACK": "ضمن الوقت",
+    "HIT_RATE": "نسبة الالتزام",
+    "WINDOW_HOURS": "آخر {hours} ساعة",
+    "STALE_SINCE": "غير محدّث منذ",
+    "FORBIDDEN": "SLA المباشر غير متاح لحسابك أو لدورك.",
+    "EMPTY": "لا توجد محادثات مفتوحة لها SLA نشط",
+    "FILTERS": {
+      "INBOX": "كل صناديق الوارد",
+      "TEAM": "كل الفرق",
+      "ASSIGNEE": "كل الوكلاء",
+      "LABEL": "كل الوسوم",
+      "POLICY": "كل سياسات SLA",
+      "CR_CODE": "رمز السجل التجاري",
+      "COUNTRY": "الدولة"
+    },
+    "TABLE": {
+      "CONVERSATION": "المحادثة",
+      "INBOX": "صندوق الوارد",
+      "ASSIGNEE": "المسؤول",
+      "POLICY": "سياسة SLA"
+    },
+    "TIMERS": {
+      "FRT": "الرد الأول",
+      "NRT": "الرد التالي",
+      "RT": "الحل"
+    }
+  }
+}

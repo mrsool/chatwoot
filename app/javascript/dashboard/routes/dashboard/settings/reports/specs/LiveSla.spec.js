@@ -1,0 +1,119 @@
+import { ref } from 'vue';
+import { mount } from '@vue/test-utils';
+import { createStore } from 'vuex';
+import LiveSla from '../LiveSla.vue';
+
+vi.mock('../components/ReportHeader.vue', () => ({
+  default: { template: '<div />' },
+}));
+
+const setHidden = hidden => {
+  Object.defineProperty(document, 'hidden', {
+    value: hidden,
+    configurable: true,
+  });
+  document.dispatchEvent(new Event('visibilitychange'));
+};
+
+const forbidden = ref(false);
+
+const build = () => {
+  const fetch = vi.fn();
+  const resetForbidden = vi.fn();
+  const noop = { namespaced: true, actions: { get: vi.fn() } };
+  const store = createStore({
+    modules: {
+      liveSla: {
+        namespaced: true,
+        state: {},
+        getters: {
+          getRows: () => [],
+          getSummary: () => null,
+          getServerTime: () => 0,
+          getFetchedAt: () => 0,
+          getStaleSince: () => null,
+          getForbidden: () => forbidden.value,
+        },
+        actions: { fetch, resetForbidden },
+      },
+      agents: noop,
+      inboxes: noop,
+      teams: noop,
+      labels: noop,
+      sla: noop,
+    },
+  });
+  const wrapper = mount(LiveSla, {
+    global: {
+      plugins: [store],
+      stubs: { LiveSlaFilters: true, LiveSlaTable: true, LiveSlaSummary: true },
+    },
+  });
+  return { fetch, resetForbidden, wrapper };
+};
+
+describe('LiveSla page', () => {
+  beforeEach(() => {
+    forbidden.value = false;
+    vi.useFakeTimers();
+    setHidden(false);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    setHidden(false);
+  });
+
+  it('fetches on mount, polls every 5s and stops on unmount', async () => {
+    const { fetch, wrapper } = build();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(fetch).toHaveBeenCalledTimes(3);
+    wrapper.unmount();
+    await vi.advanceTimersByTimeAsync(20000);
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not fetch while the document is hidden and refetches on return', async () => {
+    const { fetch, wrapper } = build();
+    fetch.mockClear();
+    setHidden(true);
+    await vi.advanceTimersByTimeAsync(20000);
+    expect(fetch).not.toHaveBeenCalled();
+    setHidden(false);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    wrapper.unmount();
+  });
+
+  it('fetches immediately with the new filters when a filter changes', async () => {
+    const { fetch, wrapper } = build();
+    fetch.mockClear();
+    wrapper
+      .findComponent({ name: 'LiveSlaFilters' })
+      .vm.$emit('change', { inbox_id: 2 });
+    await wrapper.vm.$nextTick();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0][1]).toEqual({ inbox_id: 2 });
+    wrapper.unmount();
+  });
+
+  it('stops polling once the endpoint is forbidden', async () => {
+    const { fetch, wrapper } = build();
+    forbidden.value = true;
+    await wrapper.vm.$nextTick();
+    fetch.mockClear();
+    await vi.advanceTimersByTimeAsync(20000);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(wrapper.find('[data-test="forbidden"]').exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it('resets a forbidden latch from an earlier visit before the first fetch', () => {
+    const { fetch, resetForbidden, wrapper } = build();
+    expect(resetForbidden).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(resetForbidden.mock.invocationCallOrder[0]).toBeLessThan(
+      fetch.mock.invocationCallOrder[0]
+    );
+    wrapper.unmount();
+  });
+});

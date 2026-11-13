@@ -32,6 +32,8 @@ export const getters = {
       ).length,
       busy: $state.records.filter(agent => agent.availability_status === 'busy')
         .length,
+      away: $state.records.filter(agent => agent.availability_status === 'away')
+        .length,
       offline: $state.records.filter(
         agent => agent.availability_status === 'offline'
       ).length,

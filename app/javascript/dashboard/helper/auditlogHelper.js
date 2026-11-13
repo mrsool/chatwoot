@@ -7,6 +7,7 @@ const availabilityMapping = {
   0: 'online',
   1: 'offline',
   2: 'busy',
+  3: 'away',
 };
 
 const translationKeys = {

@@ -51,6 +51,18 @@ describe('agentHelper', () => {
       expect(getSortedAgentsByAvailability([])).toEqual([]);
     });
 
+    it('places away agents after busy and before offline', () => {
+      const agents = [
+        { id: 1, name: 'Off', availability_status: 'offline' },
+        { id: 2, name: 'Away', availability_status: 'away' },
+        { id: 3, name: 'Busy', availability_status: 'busy' },
+        { id: 4, name: 'On', availability_status: 'online' },
+      ];
+      expect(
+        getSortedAgentsByAvailability(agents).map(agent => agent.id)
+      ).toEqual([4, 3, 2, 1]);
+    });
+
     it('maintains the order of agents with the same availability status', () => {
       const result = getSortedAgentsByAvailability(allAgentsData);
       expect(result[2].name).toBe('Honey Bee');

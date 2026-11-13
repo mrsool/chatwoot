@@ -26,6 +26,7 @@ import LiveReports from './LiveReports.vue';
 import MonitorShow from './monitors/MonitorShow.vue';
 import MonitorsIndex from './monitors/MonitorsIndex.vue';
 import SLAReports from './SLAReports.vue';
+import LiveSla from './LiveSla.vue';
 
 const meta = {
   featureFlag: FEATURE_FLAGS.REPORTS,
@@ -160,6 +161,17 @@ export default {
           name: 'sla_reports',
           meta,
           component: SLAReports,
+        },
+        {
+          path: 'live_sla',
+          name: 'live_sla_reports',
+          // The live SLA endpoint is administrator-only
+          meta: {
+            ...meta,
+            featureFlag: FEATURE_FLAGS.FAZAA_SLA_LIVE,
+            permissions: ['administrator'],
+          },
+          component: LiveSla,
         },
         {
           path: 'csat',

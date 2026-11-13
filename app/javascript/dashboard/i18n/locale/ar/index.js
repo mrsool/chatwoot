@@ -38,6 +38,9 @@ import sessionLimit from './sessionLimit.json';
 import settings from './settings.json';
 import signup from './signup.json';
 import sla from './sla.json';
+import awayReasons from './awayReasons.json';
+import idleAway from './idleAway.json';
+import liveSla from './liveSla.json';
 import teamsSettings from './teamsSettings.json';
 import whatsappTemplates from './whatsappTemplates.json';
 import whatsappTemplateMgmt from './whatsappTemplateMgmt.json';
@@ -83,6 +86,9 @@ export default {
   ...settings,
   ...signup,
   ...sla,
+  ...awayReasons,
+  ...idleAway,
+  ...liveSla,
   ...teamsSettings,
   ...whatsappTemplates,
   ...whatsappTemplateMgmt,

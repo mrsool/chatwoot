@@ -6,7 +6,7 @@ properties:
     type: integer
   availability_status:
     type: string
-    enum: ['online', 'busy', 'offline']
+    enum: ['online', 'busy', 'offline', 'away']
     readOnly: true
     description: >-
       The effective availability status of the agent, derived from the configured availability,

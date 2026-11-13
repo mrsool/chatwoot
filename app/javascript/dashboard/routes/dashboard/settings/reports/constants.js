@@ -83,5 +83,6 @@ export const OVERVIEW_METRICS = {
   pending: 'PENDING',
   online: 'ONLINE',
   busy: 'BUSY',
+  away: 'AWAY',
   offline: 'OFFLINE',
 };
