@@ -1,9 +1,8 @@
-name: Build Fazaa Chatwoot Production Image (AWS)
+name: Build & Deploy Mrsool Chatwoot Production (AWS)
+run-name: "Mrsool PROD | ${{ inputs.version_tag || github.ref_name }}"
 
-run-name: "PROD Build | ${{ inputs.version_tag || github.ref_name }}"
-
-# A version tag starts a production IMAGE build, not a production deployment.
-# Manual runs are supported for recovery and must specify an existing vX.Y.Z tag.
+# A new version tag runs the entire release: build -> ECR -> app_charts/master -> ArgoCD sync.
+# The workflow never creates a pull request and never modifies staging.
 on:
   push:
     tags:
@@ -11,27 +10,105 @@ on:
   workflow_dispatch:
     inputs:
       version_tag:
-        description: 'Existing Git version tag, e.g. v1.0.0'
+        description: 'Existing Git release tag, e.g. v4.18.1 (for recovery runs)'
         type: string
         required: true
 
 permissions:
-  id-token: write
   contents: read
+  id-token: write
 
+# Serialize production deployments. Never cancel a release after it has started.
 concurrency:
-  group: fazaa-chatwoot-production-build-${{ inputs.version_tag || github.ref_name }}
+  group: mrsool-fazaa-chatwoot-production-release
   cancel-in-progress: false
 
 env:
-  AWS_REGION: eu-west-3
-  AWS_ACCOUNT_ID: '634622424283'
-  ECR_REPOSITORY: fazaa-chatwoot
   RELEASE_TAG: ${{ inputs.version_tag || github.ref_name }}
+  AWS_ACCOUNT_ID: '634622424283'
+  AWS_REGION: eu-west-3
+  ECR_REPOSITORY: fazaa-chatwoot
+  CHART_VALUES: fazaa-chatwoot/ci/production-values.yaml
+  ARGOCD_APP: fazaa-chatwoot-production
 
 jobs:
+  verify-release:
+    name: Verify release tag and deployment access
+    runs-on: ubuntu-latest
+    outputs:
+      source_sha: ${{ steps.tag.outputs.source_sha }}
+    steps:
+      - name: Check required deployment credentials
+        shell: bash
+        env:
+          CHARTS_TOKEN: ${{ secrets.DEVOPS_ACCOUNT_REPO_ACCESS_TOKEN }}
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER_PROD }}
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN_PROD }}
+        run: |
+          set -euo pipefail
+          test -n "$CHARTS_TOKEN" || { echo '::error::Missing app_charts write token (DEVOPS_ACCOUNT_REPO_ACCESS_TOKEN)'; exit 1; }
+          test -n "$ARGOCD_SERVER" || { echo '::error::Missing ARGOCD_SERVER_PROD'; exit 1; }
+          test -n "$ARGOCD_TOKEN" || { echo '::error::Missing ARGOCD_AUTH_TOKEN_PROD'; exit 1; }
+          [[ "$ARGOCD_SERVER" == https://* ]] || { echo '::error::ArgoCD URL must start with https://'; exit 1; }
+
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+
+      - name: Verify tag is on develop and source is release-ready
+        id: tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "::error::Expected a vMAJOR.MINOR.PATCH tag, got $RELEASE_TAG"; exit 1;
+          }
+          if [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" != "refs/tags/${RELEASE_TAG}" ]]; then
+            echo "::error::Unexpected release event ref $GITHUB_REF"; exit 1
+          fi
+          SOURCE_SHA="$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA" || {
+            echo '::error::Release tag does not match checked-out source'; exit 1;
+          }
+          git fetch --no-tags origin '+refs/heads/develop:refs/remotes/origin/develop'
+          git merge-base --is-ancestor "$SOURCE_SHA" refs/remotes/origin/develop || {
+            echo '::error::Release must point to a commit already on develop'; exit 1;
+          }
+          test -d enterprise || { echo '::error::Enterprise source directory missing'; exit 1; }
+          grep -qF '# Precompress JS/CSS assets' docker/Dockerfile || {
+            echo '::error::Tagged Dockerfile is missing the staging-tested gzip change'; exit 1;
+          }
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          echo "Verified $RELEASE_TAG => $SOURCE_SHA"
+
+      - name: Verify ArgoCD target and access before release
+        shell: bash
+        env:
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER_PROD }}
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN_PROD }}
+        run: |
+          set -euo pipefail
+          ARGOCD_SERVER="${ARGOCD_SERVER%/}"
+          APP_JSON="$(curl --fail-with-body -fsS --max-time 20 \
+            -H "Authorization: Bearer $ARGOCD_TOKEN" \
+            "$ARGOCD_SERVER/api/v1/applications/$ARGOCD_APP")"
+          jq -e --arg app "$ARGOCD_APP" --arg path "fazaa-chatwoot" '
+            .metadata.name == $app and
+            .spec.source.repoURL == "https://github.com/mrsool/app_charts" and
+            .spec.source.targetRevision == "master" and
+            .spec.source.path == $path and
+            .spec.destination.namespace == "fazaa-chatwoot" and
+            any(.spec.source.helm.valueFiles[]?; . == "ci/production-values.yaml")
+          ' <<< "$APP_JSON" >/dev/null || {
+            echo '::error::ArgoCD app does not match the expected Mrsool production target'; exit 1;
+          }
+          echo "Verified ArgoCD application: $ARGOCD_APP"
+
   build:
     name: Build ${{ matrix.arch }}
+    needs: verify-release
     strategy:
       fail-fast: false
       matrix:
@@ -44,56 +121,218 @@ jobs:
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
     steps:
-      - name: Validate release version
-        shell: bash
-        run: |
-          set -euo pipefail
-          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
-            echo "::error::Expected existing version tag vMAJOR.MINOR.PATCH, got: $RELEASE_TAG"
-            exit 1
-          }
-
-      - name: Checkout tagged Chatwoot source
+      - name: Checkout exact tagged source
         uses: actions/checkout@v4
         with:
-          ref: ${{ env.RELEASE_TAG }}
-          fetch-depth: 0
+          ref: ${{ needs.verify-release.outputs.source_sha }}
 
-      - name: Verify release source and enterprise/gzip build
+      - name: Prepare Enterprise Dockerfile
         shell: bash
         run: |
           set -euo pipefail
-          TAG_SHA="$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")"
-          test "$(git rev-parse HEAD)" = "$TAG_SHA"
-          git merge-base --is-ancestor HEAD origin/develop || {
-            echo "::error::Release tag must point to a commit already on develop"
-            exit 1
-          }
-          test -d enterprise || {
-            echo "::error::Enterprise source directory missing"
-            exit 1
-          }
-          grep -qF '# Precompress JS/CSS assets' docker/Dockerfile || {
-            echo "::error::Tagged Dockerfile is missing the staging-tested gzip change. Do not release a different build."
-            exit 1
-          }
+          test "$(git rev-parse HEAD)" = '${{ needs.verify-release.outputs.source_sha }}'
+          test -d enterprise
+          grep -qF '# Precompress JS/CSS assets' docker/Dockerfile
           if ! grep -Eq '^[[:space:]]*ENV[[:space:]]+CW_EDITION[=[:space:]]' docker/Dockerfile; then
             printf '\nENV CW_EDITION="ee"\n' >> docker/Dockerfile
           fi
-          echo "Release: $RELEASE_TAG | Source: $TAG_SHA | Arch: ${{ matrix.arch }}"
 
-      - name: Configure AWS production credentials
+      - name: Configure production AWS OIDC credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::634622424283:role/github-stsassume
-          role-session-name: fazaa-chatwoot-prod-build
           aws-region: ${{ env.AWS_REGION }}
+          role-session-name: fazaa-chatwoot-prod-build
 
-      - name: Verify AWS account
+      - name: Verify AWS production account and ECR repository
         shell: bash
         run: |
           set -euo pipefail
-          ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
-          test "$ACCOUNT" = "$AWS_ACCOUNT_ID" || {
-            echo "::error::Wrong AWS account $ACCOUNT (expected $AWS_ACCOUNT_ID)"
-            exit 1
+          test "$(aws sts get-caller-identity --query Account --output text)" = "$AWS_ACCOUNT_ID"
+          aws ecr describe-repositories --repository-names "$ECR_REPOSITORY" >/dev/null
+
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ${{ matrix.arch }} image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.RELEASE_TAG }}-${{ matrix.arch }}
+          cache-from: type=gha,scope=fazaa-chatwoot-prod-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=fazaa-chatwoot-prod-${{ matrix.arch }}
+
+  publish-and-deploy:
+    name: Publish ECR image and deploy to production
+    needs: [verify-release, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure production AWS OIDC credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::634622424283:role/github-stsassume
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: fazaa-chatwoot-prod-release
+
+      - name: Verify AWS production account
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(aws sts get-caller-identity --query Account --output text)" = "$AWS_ACCOUNT_ID"
+
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Publish multi-arch tag and get immutable ECR digest
+        shell: bash
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          set -euo pipefail
+          IMAGE="$REGISTRY/$ECR_REPOSITORY"
+          docker buildx imagetools create \
+            --tag "$IMAGE:$RELEASE_TAG" \
+            "$IMAGE:$RELEASE_TAG-amd64" \
+            "$IMAGE:$RELEASE_TAG-arm64"
+          docker buildx imagetools inspect "$IMAGE:$RELEASE_TAG" --raw |
+            jq -e '[.manifests[] | select(.platform.os == "linux") | .platform.architecture] |
+                   (index("amd64") != null and index("arm64") != null)' >/dev/null || {
+            echo '::error::Multi-arch index must contain amd64 and arm64'; exit 1;
+          }
+          DETAILS="$(aws ecr describe-images \
+            --region "$AWS_REGION" --repository-name "$ECR_REPOSITORY" \
+            --image-ids imageTag="$RELEASE_TAG" \
+            --query 'imageDetails[0].{digest:imageDigest,media:imageManifestMediaType}' \
+            --output json)"
+          DIGEST="$(jq -r '.digest' <<< "$DETAILS")"
+          MEDIA="$(jq -r '.media' <<< "$DETAILS")"
+          [[ "$DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]] || { echo '::error::Missing digest'; exit 1; }
+          case "$MEDIA" in
+            application/vnd.oci.image.index.v1+json|application/vnd.docker.distribution.manifest.list.v2+json) ;;
+            *) echo "::error::Unexpected manifest media type $MEDIA"; exit 1 ;;
+          esac
+          echo "RELEASE_DIGEST=$DIGEST" >> "$GITHUB_ENV"
+          echo "Image: $IMAGE:$RELEASE_TAG"
+          echo "Digest: $DIGEST"
+
+      - name: Checkout app_charts master
+        uses: actions/checkout@v4
+        with:
+          repository: mrsool/app_charts
+          ref: master
+          token: ${{ secrets.DEVOPS_ACCOUNT_REPO_ACCESS_TOKEN }}
+          persist-credentials: true
+          path: charts
+
+      - name: Update only Mrsool Chatwoot production image values
+        working-directory: charts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          path = Path(os.environ['CHART_VALUES'])
+          text = path.read_text()
+          top = re.search(r'(?ms)^image:\s*\n(?P<body>(?:[ \t]+[^\n]*\n|\n)*)', text)
+          if not top:
+              raise SystemExit('Missing root image: mapping')
+          body = top.group('body')
+          expected = '634622424283.dkr.ecr.eu-west-3.amazonaws.com/fazaa-chatwoot'
+          repo = re.search(r'(?m)^  repository:\s*["\']?([^\s"\']+)', body)
+          if not repo or repo.group(1) != expected:
+              raise SystemExit('Refusing to update an unexpected ECR repository')
+          for key, value in [('tag', os.environ['RELEASE_TAG']),
+                             ('digest', os.environ['RELEASE_DIGEST'])]:
+              pattern = rf'(?m)^(  {key}:\s*).*$'
+              if len(re.findall(pattern, body)) != 1:
+                  raise SystemExit(f'Expected exactly one image.{key}')
+              body = re.sub(pattern, lambda m: f'{m.group(1)}"{value}"', body, count=1)
+          path.write_text(text[:top.start('body')] + body + text[top.end('body'):])
+          print(f'Updated {path}: {os.environ["RELEASE_TAG"]} / {os.environ["RELEASE_DIGEST"]}')
+          PY
+          git diff --check
+          git diff -- "$CHART_VALUES"
+
+      - name: Push updated production values directly to app_charts master
+        id: chart_push
+        working-directory: charts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.email 'devops@mrsool.co'
+          git config user.name 'mrsool-devops'
+          if ! git diff --quiet -- "$CHART_VALUES"; then
+            git add -- "$CHART_VALUES"
+            git commit -m "fazaa-chatwoot PRODUCTION: deploy $RELEASE_TAG ($GITHUB_REPOSITORY)"
+            git push origin HEAD:master
+          else
+            echo 'Production values already match the release.'
+          fi
+          echo "chart_commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger ArgoCD production sync at pushed chart commit
+        env:
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER_PROD }}
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN_PROD }}
+          CHART_COMMIT: ${{ steps.chart_push.outputs.chart_commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARGOCD_SERVER="${ARGOCD_SERVER%/}"
+          BODY="$(jq -nc --arg revision "$CHART_COMMIT" \
+            '{appNamespace:"argocd", revision:$revision, prune:false, dryRun:false}')"
+          curl --fail-with-body -fsS --max-time 40 \
+            -X POST -H 'Content-Type: application/json' \
+            -H "Authorization: Bearer $ARGOCD_TOKEN" \
+            --data "$BODY" \
+            "$ARGOCD_SERVER/api/v1/applications/$ARGOCD_APP/sync" >/dev/null
+          echo "Triggered $ARGOCD_APP sync at app_charts commit $CHART_COMMIT"
+
+      - name: Verify ArgoCD synced and healthy
+        env:
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER_PROD }}
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN_PROD }}
+          CHART_COMMIT: ${{ steps.chart_push.outputs.chart_commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARGOCD_SERVER="${ARGOCD_SERVER%/}"
+          for attempt in $(seq 1 60); do
+            STATE="$(curl --fail-with-body -fsS --max-time 20 \
+              -H "Authorization: Bearer $ARGOCD_TOKEN" \
+              "$ARGOCD_SERVER/api/v1/applications/$ARGOCD_APP")"
+            PHASE="$(jq -r '.status.operationState.phase // ""' <<< "$STATE")"
+            SYNC="$(jq -r '.status.sync.status // "Unknown"' <<< "$STATE")"
+            HEALTH="$(jq -r '.status.health.status // "Unknown"' <<< "$STATE")"
+            REVISION="$(jq -r '.status.sync.revision // ""' <<< "$STATE")"
+            echo "Sync=$SYNC Health=$HEALTH Operation=$PHASE Revision=${REVISION:0:12}"
+            if [[ "$PHASE" == Failed || "$PHASE" == Error ]]; then
+              echo '::error::ArgoCD sync failed'; exit 1
+            fi
+            if [[ "$SYNC" == Synced && "$HEALTH" == Healthy && "$REVISION" == "$CHART_COMMIT" ]]; then
+              {
+                echo "### Mrsool Chatwoot production deployed"
+                echo "- Release: \`$RELEASE_TAG\`"
+                echo "- Image digest: \`$RELEASE_DIGEST\`"
+                echo "- app_charts revision: \`$CHART_COMMIT\`"
+                echo "- ArgoCD: \`$ARGOCD_APP\` (Synced / Healthy)"
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo '::error::ArgoCD did not reach Synced/Healthy at the expected chart commit'; exit 1
