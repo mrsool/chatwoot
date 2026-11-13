@@ -18,6 +18,12 @@ vi.mock('dashboard/composables/useAccount', async () => {
   return { useAccount: () => ({ accountId: createRef(1) }) };
 });
 
+// Dashboard reads the fazaa_wfm flag from the store; keep the watcher unmounted here.
+vi.mock('dashboard/composables/store', async () => {
+  const { ref: createRef } = await import('vue');
+  return { useMapGetter: () => createRef(() => false) };
+});
+
 vi.mock('dashboard/stores/calls', () => ({
   useCallsStore: () => ({ hasActiveCall: false, hasIncomingCall: false }),
 }));
