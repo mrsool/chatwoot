@@ -161,6 +161,7 @@ Rails.application.routes.draw do
           end
           resources :sla_policies, only: [:index, :create, :show, :update, :destroy]
           resources :away_reasons, only: [:index, :create, :update, :destroy]
+          resource :compensation_caps, only: [:show, :update]
           get 'reports/live_sla', to: 'live_sla#index'
           resources :custom_roles, only: [:index, :create, :show, :update, :destroy]
           resources :agent_capacity_policies, only: [:index, :create, :show, :update, :destroy] do

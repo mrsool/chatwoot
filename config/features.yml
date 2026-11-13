@@ -303,3 +303,7 @@
   display_name: Fazaa SLA Live
   enabled: false
   column: feature_flags_ext_1
+- name: fazaa_compensation_caps
+  display_name: Fazaa Compensation Caps
+  enabled: false
+  column: feature_flags_ext_1

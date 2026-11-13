@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_12_100100) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_13_100000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -793,6 +793,23 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_12_100100) do
     t.index ["account_id", "domain"], name: "index_companies_on_account_and_domain", unique: true, where: "(domain IS NOT NULL)"
     t.index ["account_id"], name: "index_companies_on_account_id"
     t.index ["name", "account_id"], name: "index_companies_on_name_and_account_id"
+  end
+
+  create_table "compensation_cap_settings", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.decimal "bad_grade_value_limit", precision: 10, scale: 2
+    t.decimal "at_risk_value_limit", precision: 10, scale: 2
+    t.decimal "valuable_value_limit", precision: 10, scale: 2
+    t.integer "per_order_count_limit"
+    t.integer "bad_grade_window_count_limit"
+    t.integer "at_risk_window_count_limit"
+    t.integer "valuable_window_count_limit"
+    t.integer "vip_window_count_limit"
+    t.integer "window_days"
+    t.bigint "updated_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_compensation_cap_settings_on_account_id", unique: true
   end
 
   create_table "contact_inboxes", force: :cascade do |t|
