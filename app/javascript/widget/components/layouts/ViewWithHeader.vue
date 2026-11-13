@@ -183,7 +183,9 @@ export default {
         />
       </div>
       <TabBar
-        v-if="hasMultipleConversationsEnabled && isOnTabScreen && !navigationHidden"
+        v-if="
+          hasMultipleConversationsEnabled && isOnTabScreen && !navigationHidden
+        "
       />
     </div>
   </div>
