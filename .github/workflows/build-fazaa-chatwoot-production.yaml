@@ -14,6 +14,7 @@ on:
         required: true
 
 permissions:
+  id-token: write
   contents: read
 
 concurrency:
@@ -82,8 +83,8 @@ jobs:
       - name: Configure AWS production credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.ECR_ACCESS_ID_PROD }}
-          aws-secret-access-key: ${{ secrets.ECR_ACCESS_KEY_PROD }}
+          role-to-assume: arn:aws:iam::634622424283:role/github-stsassume
+          role-session-name: fazaa-chatwoot-prod-build
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Verify AWS account
