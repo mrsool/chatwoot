@@ -39,7 +39,10 @@
     },
     "API": {
       "SUCCESS": "Compensation caps updated",
-      "ERROR": "Could not save compensation caps. Please try again."
+      "ERROR": "Could not save compensation caps. Please try again.",
+      "NO_CHANGES": "No changes to save",
+      "LOAD_ERROR": "Could not load compensation caps. Saving is disabled until they load.",
+      "RETRY": "Retry"
     }
   }
 }

@@ -72,14 +72,86 @@ describe('Compensation caps page', () => {
     await flushPromises();
     expect(CompensationCapsAPI.update).toHaveBeenCalledWith({
       bad_grade_value_limit: null,
-      at_risk_value_limit: null,
-      valuable_value_limit: 120.5,
       per_order_count_limit: 3,
-      bad_grade_window_count_limit: null,
-      at_risk_window_count_limit: 4,
-      valuable_window_count_limit: 6,
-      vip_window_count_limit: 10,
-      window_days: 30,
+    });
+  });
+
+  it('sends only the one changed key', async () => {
+    const wrapper = await mountPage(caps());
+    CompensationCapsAPI.update.mockResolvedValue({ data: { payload: caps() } });
+    await input(wrapper, 'window_days').setValue('45');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(CompensationCapsAPI.update).toHaveBeenCalledWith({
+      window_days: 45,
+    });
+  });
+
+  it('sends 0, not null, when 0 is typed', async () => {
+    const wrapper = await mountPage(caps());
+    CompensationCapsAPI.update.mockResolvedValue({ data: { payload: caps() } });
+    await input(wrapper, 'per_order_count_limit').setValue('0');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(CompensationCapsAPI.update).toHaveBeenCalledWith({
+      per_order_count_limit: 0,
+    });
+  });
+
+  it('makes no request when nothing changed', async () => {
+    const wrapper = await mountPage(caps());
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(CompensationCapsAPI.update).not.toHaveBeenCalled();
+    expect(useAlert).toHaveBeenCalledWith(en.COMPENSATION_CAPS.API.NO_CHANGES);
+  });
+
+  it('diffs against the last saved values, not the first load', async () => {
+    const wrapper = await mountPage(caps());
+    CompensationCapsAPI.update.mockResolvedValue({
+      data: { payload: caps({ window_days: 45 }) },
+    });
+    await input(wrapper, 'window_days').setValue('45');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    await input(wrapper, 'per_order_count_limit').setValue('5');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(CompensationCapsAPI.update).toHaveBeenLastCalledWith({
+      per_order_count_limit: 5,
+    });
+  });
+
+  describe('when the initial load fails', () => {
+    const mountFailing = async () => {
+      CompensationCapsAPI.get.mockRejectedValue({});
+      const wrapper = mount(Index, {
+        global: {
+          plugins: [i18n],
+          stubs: { BaseSettingsHeader: true, 'fluent-icon': true },
+        },
+      });
+      await flushPromises();
+      return wrapper;
+    };
+
+    it('hides the form, never saves, and Retry reloads', async () => {
+      const wrapper = await mountFailing();
+      expect(wrapper.find('form').exists()).toBe(false);
+      expect(wrapper.find('[data-testid="caps-save"]').exists()).toBe(false);
+      expect(wrapper.find('[data-testid="caps-load-error"]').exists()).toBe(
+        true
+      );
+      expect(CompensationCapsAPI.update).not.toHaveBeenCalled();
+
+      CompensationCapsAPI.get.mockResolvedValue({ data: { payload: caps() } });
+      await wrapper.find('[data-testid="caps-retry"]').trigger('click');
+      await flushPromises();
+      expect(CompensationCapsAPI.get).toHaveBeenCalledTimes(2);
+      expect(wrapper.find('form').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="caps-load-error"]').exists()).toBe(
+        false
+      );
     });
   });
 
@@ -110,6 +182,7 @@ describe('Compensation caps page', () => {
   it('shows a success alert on save', async () => {
     const wrapper = await mountPage(caps());
     CompensationCapsAPI.update.mockResolvedValue({ data: { payload: caps() } });
+    await input(wrapper, 'window_days').setValue('31');
     await wrapper.find('form').trigger('submit');
     await flushPromises();
     expect(useAlert).toHaveBeenCalledWith(en.COMPENSATION_CAPS.API.SUCCESS);
@@ -120,6 +193,7 @@ describe('Compensation caps page', () => {
     CompensationCapsAPI.update.mockRejectedValue({
       response: { data: { message: 'Window days is out of range' } },
     });
+    await input(wrapper, 'window_days').setValue('31');
     await wrapper.find('form').trigger('submit');
     await flushPromises();
     expect(useAlert).toHaveBeenCalledWith('Window days is out of range');

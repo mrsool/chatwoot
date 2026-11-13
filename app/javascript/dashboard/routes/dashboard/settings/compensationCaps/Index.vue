@@ -53,6 +53,9 @@ const form = reactive(Object.fromEntries(KEYS.map(key => [key, ''])));
 const errors = reactive({});
 const isLoading = ref(true);
 const isSubmitting = ref(false);
+const loadFailed = ref(false);
+// last value loaded or saved on the server; a submit only sends keys that differ
+const serverValues = reactive({});
 const updatedAt = ref(null);
 const updatedBy = ref(null);
 
@@ -69,6 +72,7 @@ const fieldLabel = key => t(`COMPENSATION_CAPS.FIELDS.${key.toUpperCase()}`);
 const applyPayload = payload => {
   KEYS.forEach(key => {
     form[key] = payload[key] ?? '';
+    serverValues[key] = payload[key] ?? null;
   });
   updatedAt.value = payload.updated_at || null;
   updatedBy.value = payload.updated_by || null;
@@ -103,25 +107,39 @@ const validate = () => {
 const errorMessage = error =>
   error?.response?.data?.message || t('COMPENSATION_CAPS.API.ERROR');
 
-onMounted(async () => {
+const loadCaps = async () => {
+  isLoading.value = true;
+  loadFailed.value = false;
   try {
     const { data } = await CompensationCapsAPI.get();
     applyPayload(data.payload);
   } catch (error) {
-    useAlert(errorMessage(error));
+    // never show the form without loaded values, or a save could overwrite real caps
+    loadFailed.value = true;
+    useAlert(
+      error?.response?.data?.message || t('COMPENSATION_CAPS.API.LOAD_ERROR')
+    );
   } finally {
     isLoading.value = false;
   }
-});
+};
+
+onMounted(loadCaps);
 
 const handleSubmit = async () => {
-  if (!validate()) return;
+  if (loadFailed.value || !validate()) return;
+  // null clears a cap so MBO falls back to its default
+  const payload = {};
+  KEYS.forEach(key => {
+    const value = isBlank(form[key]) ? null : Number(form[key]);
+    if (value !== serverValues[key]) payload[key] = value;
+  });
+  if (Object.keys(payload).length === 0) {
+    useAlert(t('COMPENSATION_CAPS.API.NO_CHANGES'));
+    return;
+  }
   isSubmitting.value = true;
   try {
-    // null clears a cap so MBO falls back to its default
-    const payload = Object.fromEntries(
-      KEYS.map(key => [key, isBlank(form[key]) ? null : Number(form[key])])
-    );
     const { data } = await CompensationCapsAPI.update(payload);
     applyPayload(data.payload);
     useAlert(t('COMPENSATION_CAPS.API.SUCCESS'));
@@ -146,7 +164,23 @@ const handleSubmit = async () => {
       />
     </template>
     <template #body>
-      <form class="grid gap-6 max-w-2xl" @submit.prevent="handleSubmit">
+      <div
+        v-if="loadFailed"
+        data-testid="caps-load-error"
+        class="flex flex-col items-start gap-3 max-w-2xl"
+      >
+        <p class="mb-0 text-body-para text-n-slate-11">
+          {{ t('COMPENSATION_CAPS.API.LOAD_ERROR') }}
+        </p>
+        <NextButton
+          blue
+          type="button"
+          data-testid="caps-retry"
+          :label="t('COMPENSATION_CAPS.API.RETRY')"
+          @click="loadCaps"
+        />
+      </div>
+      <form v-else class="grid gap-6 max-w-2xl" @submit.prevent="handleSubmit">
         <p
           v-if="lastChanged"
           data-testid="caps-last-changed"
