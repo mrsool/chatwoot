@@ -30,6 +30,7 @@
         "WEBHOOKS": "Webhook",
         "AUTOMATION_RULES": "Automation rules",
         "MACROS": "ماكروس",
+        "COMPENSATION_CAPS": "حدود التعويضات",
         "CONVERSATION_DELETIONS": "Conversation deletions",
         "MESSAGE_DELETIONS": "Message deletions"
       },
@@ -100,6 +101,10 @@
     },
     "ACCOUNT": {
       "EDIT": "{agentName} قام بتحديث إعدادات الحساب (#{id})"
+    },
+    "COMPENSATION_CAPS": {
+      "ADD": "{agentName} قام بتحديث حدود التعويضات",
+      "EDIT": "{agentName} قام بتحديث حدود التعويضات"
     },
     "CONVERSATION": {
       "DELETE": "{agentName} deleted conversation #{id}"

@@ -39,6 +39,7 @@ import settings from './settings.json';
 import signup from './signup.json';
 import sla from './sla.json';
 import awayReasons from './awayReasons.json';
+import compensationCaps from './compensationCaps.json';
 import idleAway from './idleAway.json';
 import liveSla from './liveSla.json';
 import teamsSettings from './teamsSettings.json';
@@ -87,6 +88,7 @@ export default {
   ...signup,
   ...sla,
   ...awayReasons,
+  ...compensationCaps,
   ...idleAway,
   ...liveSla,
   ...teamsSettings,

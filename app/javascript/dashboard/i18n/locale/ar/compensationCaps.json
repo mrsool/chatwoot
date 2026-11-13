@@ -1,0 +1,48 @@
+{
+  "COMPENSATION_CAPS": {
+    "HEADER": "حدود التعويضات",
+    "DESCRIPTION": "الحدود المفروضة على مبالغ التعويضات التي يمكن للوكلاء صرفها للعملاء. اترك الحقل فارغًا لاستخدام القيمة الافتراضية للمنصة.",
+    "LOADING": "جارٍ جلب حدود التعويضات",
+    "LAST_CHANGED": "آخر تعديل بواسطة {name} في {date}",
+    "SECTIONS": {
+      "VALUE": {
+        "TITLE": "الحد الأقصى لقيمة التعويض الواحد",
+        "HELP": "تتم المقارنة مع إجمالي الأصناف المعوَّضة بعملة الطلب."
+      },
+      "PER_ORDER": {
+        "TITLE": "الحد الأقصى لعدد التعويضات لكل طلب"
+      },
+      "WINDOW": {
+        "TITLE": "الحد الأقصى لعدد التعويضات خلال الفترة"
+      }
+    },
+    "FIELDS": {
+      "BAD_GRADE_VALUE_LIMIT": "تصنيف سيئ",
+      "AT_RISK_VALUE_LIMIT": "معرَّض للخطر",
+      "VALUABLE_VALUE_LIMIT": "عميل مهم",
+      "VIP_VALUE_LIMIT": "كبار العملاء (VIP)",
+      "PER_ORDER_COUNT_LIMIT": "التعويضات لكل طلب",
+      "BAD_GRADE_WINDOW_COUNT_LIMIT": "تصنيف سيئ",
+      "AT_RISK_WINDOW_COUNT_LIMIT": "معرَّض للخطر",
+      "VALUABLE_WINDOW_COUNT_LIMIT": "عميل مهم",
+      "VIP_WINDOW_COUNT_LIMIT": "كبار العملاء (VIP)",
+      "WINDOW_DAYS": "مدة الفترة (بالأيام)"
+    },
+    "FORM": {
+      "USE_DEFAULT": "استخدام القيمة الافتراضية",
+      "UNLIMITED": "غير محدود",
+      "SAVE": "حفظ الحدود"
+    },
+    "VALIDATION": {
+      "NUMBER_RANGE": "أدخل رقمًا بين {min} و{max}.",
+      "INTEGER_RANGE": "أدخل عددًا صحيحًا بين {min} و{max}."
+    },
+    "API": {
+      "SUCCESS": "تم تحديث حدود التعويضات",
+      "ERROR": "تعذّر حفظ حدود التعويضات. يرجى المحاولة مرة أخرى.",
+      "NO_CHANGES": "لا توجد تغييرات للحفظ",
+      "LOAD_ERROR": "تعذّر تحميل حدود التعويضات. الحفظ معطّل حتى يتم تحميلها.",
+      "RETRY": "إعادة المحاولة"
+    }
+  }
+}

@@ -183,7 +183,8 @@ RSpec.describe Account do
         feature_conversation_monitors: 1 << 8,
         feature_campaign_analytics: 1 << 9,
         feature_fazaa_wfm: 1 << 10,
-        feature_fazaa_sla_live: 1 << 11
+        feature_fazaa_sla_live: 1 << 11,
+        feature_fazaa_compensation_caps: 1 << 12
       )
       expect(described_class.flag_mapping['feature_flags_ext_1'][:feature_whatsapp_manual_transfer]).to eq(1)
       expect(described_class.flag_mapping['feature_flags_ext_1'][:feature_data_import]).to eq(2)

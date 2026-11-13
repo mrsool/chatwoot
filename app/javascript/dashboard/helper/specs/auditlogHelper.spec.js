@@ -219,6 +219,16 @@ describe('Helper functions', () => {
       expect(logActionKey).toEqual('AUDIT_LOGS.MESSAGE.DELETE');
     });
 
+    it('should map compensation cap setting changes to their labels', () => {
+      const base = { auditable_type: 'CompensationCapSetting', user_id: 1 };
+      expect(generateLogActionKey({ ...base, action: 'update' })).toEqual(
+        'AUDIT_LOGS.COMPENSATION_CAPS.EDIT'
+      );
+      expect(generateLogActionKey({ ...base, action: 'create' })).toEqual(
+        'AUDIT_LOGS.COMPENSATION_CAPS.ADD'
+      );
+    });
+
     it('should generate correct action key when updating a deleted user', () => {
       const auditLogItem = {
         auditable_type: 'AccountUser',

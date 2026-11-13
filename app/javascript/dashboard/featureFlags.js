@@ -58,6 +58,7 @@ export const FEATURE_FLAGS = {
   UNREAD_COUNT_FOR_FILTERS: 'unread_count_for_filters',
   FAZAA_WFM: 'fazaa_wfm',
   FAZAA_SLA_LIVE: 'fazaa_sla_live',
+  FAZAA_COMPENSATION_CAPS: 'fazaa_compensation_caps',
 };
 
 export const PREMIUM_FEATURES = [

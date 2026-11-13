@@ -39,6 +39,8 @@ const translationKeys = {
   'account:update': `AUDIT_LOGS.ACCOUNT.EDIT`,
   'conversation:destroy': `AUDIT_LOGS.CONVERSATION.DELETE`,
   'message:destroy': `AUDIT_LOGS.MESSAGE.DELETE`,
+  'compensationcapsetting:create': `AUDIT_LOGS.COMPENSATION_CAPS.ADD`,
+  'compensationcapsetting:update': `AUDIT_LOGS.COMPENSATION_CAPS.EDIT`,
 };
 
 function extractAttrChange(attrChange) {
@@ -244,6 +246,7 @@ export const EVENT_TYPE_GROUPS = [
       { value: 'Webhook', key: 'WEBHOOKS' },
       { value: 'AutomationRule', key: 'AUTOMATION_RULES' },
       { value: 'Macro', key: 'MACROS' },
+      { value: 'CompensationCapSetting', key: 'COMPENSATION_CAPS' },
     ],
   },
   {

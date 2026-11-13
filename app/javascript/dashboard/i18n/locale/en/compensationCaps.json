@@ -1,0 +1,48 @@
+{
+  "COMPENSATION_CAPS": {
+    "HEADER": "Compensation caps",
+    "DESCRIPTION": "Limits on customer reimbursements that agents can issue. Leave a field blank to use the platform default.",
+    "LOADING": "Fetching compensation caps",
+    "LAST_CHANGED": "Last changed by {name} on {date}",
+    "SECTIONS": {
+      "VALUE": {
+        "TITLE": "Max value per reimbursement",
+        "HELP": "Compared against the reimbursed item total in the order's currency."
+      },
+      "PER_ORDER": {
+        "TITLE": "Max reimbursements per order"
+      },
+      "WINDOW": {
+        "TITLE": "Max reimbursements per window"
+      }
+    },
+    "FIELDS": {
+      "BAD_GRADE_VALUE_LIMIT": "Bad grade",
+      "AT_RISK_VALUE_LIMIT": "At risk",
+      "VALUABLE_VALUE_LIMIT": "Valuable",
+      "VIP_VALUE_LIMIT": "VIP",
+      "PER_ORDER_COUNT_LIMIT": "Reimbursements per order",
+      "BAD_GRADE_WINDOW_COUNT_LIMIT": "Bad grade",
+      "AT_RISK_WINDOW_COUNT_LIMIT": "At risk",
+      "VALUABLE_WINDOW_COUNT_LIMIT": "Valuable",
+      "VIP_WINDOW_COUNT_LIMIT": "VIP",
+      "WINDOW_DAYS": "Window length (days)"
+    },
+    "FORM": {
+      "USE_DEFAULT": "Use default",
+      "UNLIMITED": "Unlimited",
+      "SAVE": "Save caps"
+    },
+    "VALIDATION": {
+      "NUMBER_RANGE": "Enter a number between {min} and {max}.",
+      "INTEGER_RANGE": "Enter a whole number between {min} and {max}."
+    },
+    "API": {
+      "SUCCESS": "Compensation caps updated",
+      "ERROR": "Could not save compensation caps. Please try again.",
+      "NO_CHANGES": "No changes to save",
+      "LOAD_ERROR": "Could not load compensation caps. Saving is disabled until they load.",
+      "RETRY": "Retry"
+    }
+  }
+}
