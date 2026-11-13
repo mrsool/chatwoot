@@ -1,0 +1,112 @@
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/develop' || {
+            echo "::error::Run this workflow from develop"
+            exit 1
+          }
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "::error::Expected vMAJOR.MINOR.PATCH, got $RELEASE_TAG"
+            exit 1
+          }
+
+      - name: Configure AWS production credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.ECR_ACCESS_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.ECR_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify exact production ECR image and digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
+          test "$ACCOUNT" = "$AWS_ACCOUNT_ID" || {
+            echo "::error::Wrong AWS account: $ACCOUNT"
+            exit 1
+          }
+          DETAILS="$(aws ecr describe-images \
+            --region "$AWS_REGION" \
+            --repository-name "$ECR_REPOSITORY" \
+            --image-ids imageTag="$RELEASE_TAG" \
+            --query 'imageDetails[0].{digest:imageDigest,media:imageManifestMediaType}' \
+            --output json)"
+          DIGEST="$(jq -r '.digest' <<< "$DETAILS")"
+          MEDIA="$(jq -r '.media' <<< "$DETAILS")"
+          [[ "$DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]] || {
+            echo "::error::ECR image digest not found"
+            exit 1
+          }
+          case "$MEDIA" in
+            application/vnd.oci.image.index.v1+json|application/vnd.docker.distribution.manifest.list.v2+json) ;;
+            *) echo "::error::Expected multi-arch index, got $MEDIA"; exit 1 ;;
+          esac
+          echo "RELEASE_DIGEST=$DIGEST" >> "$GITHUB_ENV"
+          echo "Verified ${ECR_REPOSITORY}:${RELEASE_TAG}@${DIGEST}"
+
+      - name: Checkout app_charts master
+        uses: actions/checkout@v4
+        with:
+          repository: mrsool/app_charts
+          ref: master
+          token: ${{ secrets.DEVOPS_ACCOUNT_REPO_ACCESS_TOKEN }}
+          path: app_charts
+          persist-credentials: true
+
+      - name: Update only the production image tag and digest
+        working-directory: app_charts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          path = Path(os.environ['CHART_VALUES'])
+          content = path.read_text()
+          # Restrict replacement to the first root-level image: mapping.
+          match = re.search(r'(?ms)^image:\s*\n(?P<body>(?:[ \t]+[^\n]*\n|\n)*)', content)
+          if not match:
+              raise SystemExit('Missing top-level image: block in production values')
+          body = match.group('body')
+          expected_repo = '634622424283.dkr.ecr.eu-west-3.amazonaws.com/fazaa-chatwoot'
+          repo = re.search(r'(?m)^  repository:\s*["\']?([^\s"\']+)', body)
+          if not repo or repo.group(1) != expected_repo:
+              raise SystemExit('Production ECR repository mismatch: refusing to edit')
+          for key, value in [('tag', os.environ['RELEASE_TAG']),
+                             ('digest', os.environ['RELEASE_DIGEST'])]:
+              pattern = rf'(?m)^(  {key}:\s*).*$'
+              if len(re.findall(pattern, body)) != 1:
+                  raise SystemExit(f'Expected exactly one image.{key} key')
+              body = re.sub(pattern, lambda m: f'{m.group(1)}"{value}"', body, count=1)
+          path.write_text(content[:match.start('body')] + body + content[match.end('body'):])
+          print(f'Updated {path} to {os.environ["RELEASE_TAG"]} / {os.environ["RELEASE_DIGEST"]}')
+          PY
+          git diff --check
+          git diff -- "$CHART_VALUES"
+
+      - name: Push production release branch and create PR
+        working-directory: app_charts
+        env:
+          GH_TOKEN: ${{ secrets.DEVOPS_ACCOUNT_REPO_ACCESS_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- "$CHART_VALUES"; then
+            echo 'Production values already point to this image; nothing to change.'
+            exit 0
+          fi
+          BRANCH="release/fazaa-chatwoot-${RELEASE_TAG}-${GITHUB_RUN_ID}"
+          git config user.email 'devops@mrsool.co'
+          git config user.name 'mrsool-devops'
+          git checkout -b "$BRANCH"
+          git add -- "$CHART_VALUES"
+          git commit -m "fazaa-chatwoot production: release ${RELEASE_TAG}"
+          git push --set-upstream origin "$BRANCH"
+          gh pr create \
+            --repo mrsool/app_charts \
+            --base master \
+            --head "$BRANCH" \
+            --title "fazaa-chatwoot production: release ${RELEASE_TAG}" \
+            --body "Update Mrsool AWS production Chatwoot to **${RELEASE_TAG}**.\n\nECR: \`634622424283.dkr.ecr.eu-west-3.amazonaws.com/fazaa-chatwoot\`\nDigest: \`${RELEASE_DIGEST}\`\n\nReview and merge this PR, then manually sync the production ArgoCD application. No Kubernetes deployment is performed by this workflow."
