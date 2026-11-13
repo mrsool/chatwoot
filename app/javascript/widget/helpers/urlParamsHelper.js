@@ -21,6 +21,12 @@ export const isNavigationHidden = (search = '') => {
   return new URLSearchParams(search).get('hide_nav') === '1';
 };
 
+// Opt-in, because only a host that owns navigation itself -- our apps' WebView
+// -- is stranded by a new tab. Every other embed keeps the tab it expects.
+export const isMediaPreviewEnabled = (search = '') => {
+  return new URLSearchParams(search).get('media_preview') === '1';
+};
+
 export const buildPopoutURL = ({
   origin,
   conversationCookie,
