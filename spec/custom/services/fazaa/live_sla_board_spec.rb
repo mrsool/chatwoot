@@ -1,6 +1,7 @@
 require 'rails_helper'
 
-RSpec.describe Fazaa::LiveSlaBoard do
+# AppliedSla lives in enterprise/, so these specs skip in the FOSS run.
+RSpec.describe Fazaa::LiveSlaBoard, if: ChatwootApp.enterprise? do
   let(:account) { create(:account) }
   let(:inbox) { create(:inbox, account: account) }
   let(:now) { Time.zone.parse('2026-11-12 10:00:00') }

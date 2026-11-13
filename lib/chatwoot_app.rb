@@ -38,13 +38,8 @@ module ChatwootApp
   end
 
   def self.extensions
-    if custom?
-      %w[enterprise custom]
-    elsif enterprise?
-      %w[enterprise]
-    else
-      %w[]
-    end
+    # Each extension is listed only when its directory is present, so a FOSS build (enterprise/ stripped) can still load custom/.
+    [('enterprise' if enterprise?), ('custom' if custom?)].compact
   end
 
   def self.advanced_search_allowed?

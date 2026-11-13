@@ -1,6 +1,7 @@
 require 'rails_helper'
 
-RSpec.describe 'Live SLA API', type: :request do
+# AppliedSla lives in enterprise/, so these specs skip in the FOSS run.
+RSpec.describe 'Live SLA API', if: ChatwootApp.enterprise?, type: :request do
   let(:account) { create(:account) }
   let(:administrator) { create(:user, account: account, role: :administrator) }
   let(:agent) { create(:user, account: account, role: :agent) }
