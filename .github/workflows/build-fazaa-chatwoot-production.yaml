@@ -1,0 +1,109 @@
+          git merge-base --is-ancestor HEAD origin/develop || {
+            echo "::error::Release tag must point to a commit already on develop"
+            exit 1
+          }
+          test -d enterprise || {
+            echo "::error::Enterprise source directory missing"
+            exit 1
+          }
+          grep -qF '# Precompress JS/CSS assets' docker/Dockerfile || {
+            echo "::error::Tagged Dockerfile is missing the staging-tested gzip change. Do not release a different build."
+            exit 1
+          }
+          if ! grep -Eq '^[[:space:]]*ENV[[:space:]]+CW_EDITION[=[:space:]]' docker/Dockerfile; then
+            printf '\nENV CW_EDITION="ee"\n' >> docker/Dockerfile
+          fi
+          echo "Release: $RELEASE_TAG | Source: $TAG_SHA | Arch: ${{ matrix.arch }}"
+
+      - name: Configure AWS production credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.ECR_ACCESS_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.ECR_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS account
+        shell: bash
+        run: |
+          set -euo pipefail
+          ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
+          test "$ACCOUNT" = "$AWS_ACCOUNT_ID" || {
+            echo "::error::Wrong AWS account $ACCOUNT (expected $AWS_ACCOUNT_ID)"
+            exit 1
+          }
+          aws ecr describe-repositories --repository-names "$ECR_REPOSITORY" > /dev/null
+
+      - name: Login to production ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ${{ matrix.arch }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.RELEASE_TAG }}-${{ matrix.arch }}
+          cache-from: type=gha,scope=fazaa-chatwoot-production-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=fazaa-chatwoot-production-${{ matrix.arch }}
+
+  publish:
+    name: Publish versioned multi-arch image
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS production credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.ECR_ACCESS_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.ECR_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS account
+        shell: bash
+        run: |
+          set -euo pipefail
+          ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
+          test "$ACCOUNT" = "$AWS_ACCOUNT_ID" || exit 1
+
+      - name: Login to production ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Publish multi-arch manifest and verify digest
+        shell: bash
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          set -euo pipefail
+          IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}"
+          docker buildx imagetools create \
+            --tag "${IMAGE}:${RELEASE_TAG}" \
+            "${IMAGE}:${RELEASE_TAG}-amd64" \
+            "${IMAGE}:${RELEASE_TAG}-arm64"
+          docker buildx imagetools inspect "${IMAGE}:${RELEASE_TAG}" --raw | \
+            jq -e '[.manifests[] | select(.platform.os == "linux") | .platform.architecture] |
+                   (index("amd64") != null and index("arm64") != null)' > /dev/null
+          DIGEST="$(aws ecr describe-images \
+            --region "$AWS_REGION" \
+            --repository-name "$ECR_REPOSITORY" \
+            --image-ids imageTag="$RELEASE_TAG" \
+            --query 'imageDetails[0].imageDigest' --output text)"
+          [[ "$DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]] || {
+            echo "::error::Invalid ECR digest: $DIGEST"
+            exit 1
+          }
+          {
+            echo '### Mrsool AWS Production Chatwoot Image'
+            echo "- Image: \`${IMAGE}:${RELEASE_TAG}\`"
+            echo "- Digest: \`${DIGEST}\`"
+            echo '- Architectures: amd64 and arm64'
+            echo '- Deployment: NOT triggered (run the separate production deploy workflow)'
+          } >> "$GITHUB_STEP_SUMMARY"
