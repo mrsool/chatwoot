@@ -42,8 +42,8 @@ jobs:
         shell: bash
         env:
           CHARTS_TOKEN: ${{ secrets.DEVOPS_ACCOUNT_REPO_ACCESS_TOKEN }}
-          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER_PROD }}
-          ARGOCD_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN_PROD }}
+          ARGOCD_SERVER: https://argocd.mrsool.tools
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
         run: |
           set -euo pipefail
           test -n "$CHARTS_TOKEN" || { echo '::error::Missing app_charts write token (DEVOPS_ACCOUNT_REPO_ACCESS_TOKEN)'; exit 1; }
